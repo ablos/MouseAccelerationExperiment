@@ -6,11 +6,8 @@
   const ZONE_WIDTHS = [20, 40, 80];
   const DISTANCES   = [100, 250, 500];
 
-  let scaleX       = $state(1);
-  let scaleY       = $state(1);
   let screenWidth  = $state(1920);
   let screenHeight = $state(1080);
-  let browserZoom  = $state(1);
 
   let trials       = $state([]);
   let currentIndex = $state(0);
@@ -38,9 +35,7 @@
   onMount(() => {
     screenWidth  = window.screen.width;
     screenHeight = window.screen.height;
-    browserZoom  = window.devicePixelRatio || 1;
-    scaleX = window.innerWidth  / 1920;
-    scaleY = window.innerHeight / 1080;
+    
     trials = buildTrials();
     status = TaskStatus.RUNNING
   });
@@ -51,7 +46,6 @@
       zoneWidth:    trial.size,
       distance:     trial.distance,
       ...result,
-      scaleX, scaleY, screenWidth, screenHeight, browserZoom
     }];
 
     console.log(results)
@@ -83,7 +77,6 @@
         <SliderTarget
           zoneWidth={trial.size}
           distance={trial.distance}
-          scaleX={1}
           onCommit={handleCommit}
         />
       {/key}
