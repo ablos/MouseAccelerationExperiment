@@ -4,13 +4,13 @@
   let {
     zoneWidth   = 40,   // px at 1080p baseline
     distance    = 250,  // px at 1080p baseline
-    scaleX      = 1,
     onCommit    = (result) => {}  // callback: { hit, reactionTime, errorPx, accuracy }
   } = $props();
 
   const TRACK_WIDTH_BASE = 800;
   const HANDLE_RADIUS    = 16;
-
+  const scaleX = 1;
+  
   // Layout (scaled px)
   let trackWidth  = $state(0);
   let handleX     = $state(0);
@@ -34,9 +34,9 @@
   );
 
   function setup() {
-    const sZoneWidth = zoneWidth * scaleX;
-    const sDistance  = distance  * scaleX;
-    trackWidth = TRACK_WIDTH_BASE * scaleX;
+    const sZoneWidth = zoneWidth;
+    const sDistance  = distance ;
+    trackWidth = TRACK_WIDTH_BASE;
 
     const halfZone = sZoneWidth / 2;
     const padding  = sZoneWidth;
@@ -60,7 +60,7 @@
 
   $effect(() => {
     // Track props as triggers only; write state via untrack to avoid cycles
-    zoneWidth; distance; scaleX; trackEl;
+    zoneWidth; distance; trackEl;
     untrack(() => { if (trackEl) setup(); });
   });
 
@@ -90,7 +90,12 @@
   }
 
   function onMouseDown(e) {
-    if (committed) return;
+    console.log()
+    if (committed) {
+      console.log("OOO")
+      return;
+    }
+    console.log("S")
     isDragging = true;
     moveHandle(e.clientX);
     window.addEventListener('mousemove', onMouseMove);
@@ -111,51 +116,33 @@
     commit();
   }
 
-  function onTouchStart(e) {
-    if (committed) return;
-    isDragging = true;
-    moveHandle(e.touches[0].clientX);
-  }
-
-  function onTouchMove(e) {
-    if (!isDragging) return;
-    if (!dragStarted) { dragStarted = true; startTime = performance.now(); }
-    moveHandle(e.touches[0].clientX);
-    e.preventDefault();
-  }
-
-  function onTouchEnd() {
-    if (!isDragging) return;
-    isDragging = false;
-    commit();
-  }
 </script>
 
 <div
   class="track"
   bind:this={trackEl}
   style="width: {trackWidth}px"
-  onmousedown={onMouseDown}
-  ontouchstart={onTouchStart}
-  ontouchmove={onTouchMove}
-  ontouchend={onTouchEnd}
-  role="slider"
-  aria-valuenow={Math.round(handleX)}
-  tabindex="0"
+
 >
   <div class="track-line"></div>
 
   <div
     class="zone"
-    class:zone-active={inZoneNow || (committed && hitResult)}
+    class:zone-active={inZoneNow || (committed )}
     style="left: {zoneLeft}px; width: {zoneW}px"
   >
     <div class="zone-center"></div>
   </div>
 
   <div
+    role="slider"
+    aria-valuenow={Math.round(handleX)}
+    tabindex="0"
+    onmousedown={onMouseDown}
+
     class="handle"
     class:dragging={isDragging}
+    
     style="left: {handleX}px; width: {HANDLE_RADIUS}px; height: {HANDLE_RADIUS}px"
   ></div>
 </div>
@@ -164,7 +151,7 @@
   .track {
     position: relative;
     height: 56px;
-    cursor: grab;
+    
     user-select: none;
     flex-shrink: 0;
   }
@@ -211,14 +198,12 @@
   .handle {
     position: absolute;
     top: 50%;
-    /* width: 32px;
-    height: 32px; */
     border-radius: 50%;
     background: #f0f0f0;
     transform: translate(-50%, -50%);
     box-shadow: 0 0 0 3px #0d0d10, 0 0 0 5px #f0f0f0;
     transition: box-shadow 0.15s;
-    pointer-events: none;
+    cursor: grab;
   }
 
   .handle.dragging {
