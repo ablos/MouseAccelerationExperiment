@@ -15,7 +15,7 @@
   let trials       = $state([]);
   let currentIndex = $state(0);
   let results      = $state([]);
-  let status         = $state(TaskStatus.IDLE);
+  let status       = $state(TaskStatus.IDLE);
 
   let trial = $derived(trials[currentIndex]);
 
@@ -42,6 +42,7 @@
     scaleX = window.innerWidth  / 1920;
     scaleY = window.innerHeight / 1080;
     trials = buildTrials();
+    status = TaskStatus.RUNNING
   });
 
   function handleCommit(result) {
@@ -52,6 +53,8 @@
       ...result,
       scaleX, scaleY, screenWidth, screenHeight, browserZoom
     }];
+
+    console.log(results)
 
     // Short delay so user sees the zone highlight before advancing
     setTimeout(() => {
@@ -73,7 +76,7 @@
       
     </div>
 
-  {:else if trial}
+  {:else if status == TaskStatus.RUNNING}
     
     <div class="arena">
       {#key currentIndex}
