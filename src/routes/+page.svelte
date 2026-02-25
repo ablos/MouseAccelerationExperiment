@@ -1,5 +1,6 @@
 <script>
-    import ClickTask from "$lib/ClickTask.svelte";
+    import ClickTask from "$lib/tasks/ClickTask.svelte";
+	import SliderTask from "$lib/tasks/SliderTask.svelte";
 </script>
 
-<ClickTask />
+<SliderTask />

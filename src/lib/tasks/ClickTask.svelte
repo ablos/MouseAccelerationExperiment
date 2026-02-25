@@ -1,8 +1,8 @@
 <script>
     import { onMount } from 'svelte';
     import ClickTarget from "./ClickTarget.svelte";
-    import RequestFullscreen from './RequestFullscreen.svelte';
-    import { TaskStatus } from './enums';
+    import RequestFullscreen from '../RequestFullscreen.svelte';
+    import { TaskStatus } from '../enums';
 
     const sizes = [10, 20, 40];
     const distances = [100, 200, 400];
