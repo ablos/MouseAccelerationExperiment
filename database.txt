@@ -11,13 +11,9 @@ One table for session data
     - ScreenResY
     - Screen pxPerMm
 
-One table for task types
-    - TaskTypeID
-    - Name
-
 One table for tasks
     - TaskID
-    - TaskTypeID (foreign)
+    - TaskType
     - SessionID (foreign)
     - Task start time
     - Task end time

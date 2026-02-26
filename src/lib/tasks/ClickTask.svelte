@@ -220,7 +220,7 @@
         currentTrial.complete(e.clientX, e.clientY);
 
         // Check if completed
-        if (currentTrialIndex == trials.length - 1) {
+        if (currentTrialIndex == trials.length) {
             handleTaskDone();
             return;
         }

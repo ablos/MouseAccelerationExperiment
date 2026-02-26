@@ -42,6 +42,7 @@ export class Task
     constructor(taskType) 
     {
         this.taskType = taskType;
+        this.sessionId = null;
         this.startTime = Date.now();
         this.endTime = null;
         this.trials = [];
@@ -55,5 +56,16 @@ export class Task
     complete() 
     {
         this.endTime = Date.now();
+    }
+}
+
+export class Session 
+{
+    constructor(participantId, screenResX, screenResY, pxPerMm) 
+    {
+        this.participantId = participantId,
+        this.screenResX = screenResX,
+        this.screenResY = screenResY,
+        this.pxPerMm = pxPerMm
     }
 }
