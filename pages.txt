@@ -1,0 +1,5 @@
+- Login page
+- Explantion + start session page
+- session page (this is responsible for showing the current task and keeping track of which task has been done)
+
+tasks are responsible for tracking the data
