@@ -3,21 +3,23 @@
     import ClickTask from "./ClickTask.svelte";
 	import DraggingTask from "./DraggingTask.svelte";
 	import SliderTask from "./SliderTask.svelte";
+    
     let { pxPerMm } = $props();
 
-    let currentTaskType = $state(TaskType.CLICKING);
+    const taskOrder = [TaskType.CLICKING, TaskType.SLIDER, TaskType.DRAGGING]
+    let currentTaskIndex = $state(0)
     
-    function changeTaskType(taskType) {
-        currentTaskType = taskType;
+    function onComplete(taskType) {
+        currentTaskIndex++;
     }
 </script>
 
-{#if currentTaskType === TaskType.CLICKING}
-    <ClickTask {pxPerMm} {changeTaskType} />
-{:else if currentTaskType === TaskType.SLIDER }
-    <SliderTask {pxPerMm} {changeTaskType}/>
-{:else if currentTaskType === TaskType.DRAGGING }
-    <DraggingTask />
+{#if taskOrder[currentTaskIndex] === TaskType.CLICKING}
+    <ClickTask {pxPerMm} {onComplete} />
+{:else if taskOrder[currentTaskIndex] === TaskType.SLIDER }
+    <SliderTask {pxPerMm} {onComplete}/>
+{:else if taskOrder[currentTaskIndex] === TaskType.DRAGGING }
+    <DraggingTask {pxPerMm} {onComplete} />
 {:else}
     <div>Task not found</div>
 {/if}

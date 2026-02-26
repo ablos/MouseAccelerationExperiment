@@ -8,7 +8,7 @@
 
     const enableDebug = true;
 
-    let { pxPerMm, changeTaskType } = $props();
+    let { pxPerMm, onComplete } = $props();
 
     // Values in mm, designed for a reference 1080p screen
     const radii = [3, 5, 10];
@@ -161,7 +161,7 @@
         if(currentTrial === trials.length){
             console.log("ENDED")
             status = TaskStatus.DONE
-            changeTaskType(TaskType.SLIDER)
+            
         }
 
 
@@ -198,7 +198,7 @@
         console.log("test done");
         document.exitFullscreen();
 
-        onComplete();
+        onComplete()
     }
 
     // handles click functionality

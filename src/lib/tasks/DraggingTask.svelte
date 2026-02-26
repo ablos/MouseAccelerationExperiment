@@ -1,5 +1,5 @@
 <script>
-    let { pxPerMm, changeTaskType } = $props();
+    let { pxPerMm, onComplete } = $props();
 </script>
 
 <div class="container">

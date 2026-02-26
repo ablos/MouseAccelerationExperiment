@@ -17,7 +17,7 @@
 
   let trial = $derived(trials[currentIndex]);
 
-  let {pxPerMm, changeTaskType} = $props();
+  let {pxPerMm, onComplete} = $props();
 
   function shuffle(arr) {
     const a = [...arr];
@@ -56,7 +56,7 @@
       // -15 only for debugging
       if (currentIndex + 1 >= trials.length - 15) {
         status = TaskStatus.DONE;
-        changeTaskType(TaskType.DRAGGING)
+        onComplete()
         
       } else {
         currentIndex++;
