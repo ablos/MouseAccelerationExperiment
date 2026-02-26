@@ -92,10 +92,8 @@
   function onMouseDown(e) {
     console.log()
     if (committed) {
-      console.log("OOO")
       return;
     }
-    console.log("S")
     isDragging = true;
     moveHandle(e.clientX);
     window.addEventListener('mousemove', onMouseMove);
