@@ -39,9 +39,9 @@ export class Trial
 
 export class Task 
 {
-    constructor(taskTypeId) 
+    constructor(taskType) 
     {
-        this.taskTypeId = taskTypeId;
+        this.taskType = taskType;
         this.startTime = Date.now();
         this.endTime = null;
         this.trials = [];

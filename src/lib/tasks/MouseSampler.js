@@ -18,7 +18,10 @@ export function createMouseSampler(onSample, targetFps = 60)
         if (timestamp - lastSampleTime >= interval) 
         {
             lastSampleTime = timestamp;
-            onSample(mouseX, mouseY, timestamp);
+            
+            // Only sample if mouse actually moved
+            if (mouseX !== 0 || mouseY !== 0)
+                onSample(mouseX, mouseY, timestamp);
         }
         
         rafId = requestAnimationFrame(sample);

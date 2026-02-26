@@ -7,7 +7,7 @@
     import { TaskStatus, TaskType } from '$lib/enums';
 	import { Task, Trial, MouseCoordinate } from '$lib/dataTypes';
 
-    const enableDebug = true;
+    const enableDebug = false;
 
     let { pxPerMm, onComplete } = $props();
 
@@ -175,7 +175,7 @@
     function handleTaskStart(cursorX, cursorY) {
         status = TaskStatus.RUNNING;
 
-        currentTask = new Task("click");
+        currentTask = new Task(TaskType.CLICKING);
 
         sampler.start();
         runTrial(cursorX, cursorY);
@@ -186,6 +186,8 @@
         sampler.stop();
         status = TaskStatus.DONE;
         document.exitFullscreen();
+
+        console.log(currentTask);
 
         onComplete(currentTask)
     }
