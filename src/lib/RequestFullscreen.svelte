@@ -1,6 +1,9 @@
 <script>
+import { getContext } from "svelte";
+
+    const {toggleFullscreen} = getContext('task')
     function onClick() {
-        document.documentElement.requestFullscreen();
+        toggleFullscreen()
     }
 </script>
 

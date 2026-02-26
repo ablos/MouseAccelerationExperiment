@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, getContext } from 'svelte';
   import SliderTarget from './SliderTarget.svelte';
 	import { TaskStatus } from '$lib/enums';
   import { TaskType } from '$lib/enums';
@@ -17,7 +17,7 @@
 
   let trial = $derived(trials[currentIndex]);
 
-  let {pxPerMm, onComplete} = $props();
+  const { pxPerMm, onComplete } = getContext('task');
 
   function shuffle(arr) {
     const a = [...arr];
@@ -67,13 +67,8 @@
 </script>
 
 <div class="screen">
-  {#if status === TaskStatus.DONE}
-    <div class="done">
-      <div class="score">THANKS. TBC</div>
-      
-    </div>
 
-  {:else if status == TaskStatus.RUNNING}
+  {#if status == TaskStatus.RUNNING}
     
     <div class="arena">
       {#key currentIndex}

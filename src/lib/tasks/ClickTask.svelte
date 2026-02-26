@@ -1,7 +1,6 @@
 <script>
-    import { onDestroy, onMount } from 'svelte';
+    import { onDestroy, onMount, getContext } from 'svelte';
     import ClickTarget from "./ClickTarget.svelte";
-    import RequestFullscreen from '$lib/RequestFullscreen.svelte';
     import DebugOverlay from './DebugOverlay.svelte'; // DEBUG
     import { createMouseSampler } from './MouseSampler';
     import { TaskStatus, TaskType } from '$lib/enums';
@@ -9,7 +8,7 @@
 
     const enableDebug = false;
 
-    let { pxPerMm, onComplete } = $props();
+    const { pxPerMm, onComplete, isFullscreen, screenWidth, screenHeight } = getContext('task');
 
     // Values in mm, designed for a reference 1080p screen
     const radii = [3, 5, 10];
@@ -22,6 +21,8 @@
     // set state variables
     let currentTrialIndex = $state(0);
     let status = $state(TaskStatus.IDLE);
+    let currentX = $state(0);
+    let currentY = $state(0);
     let isFullscreen = $state(false);
     let targetX = $state(0);
     let targetY = $state(0);
@@ -149,30 +150,23 @@
         // Set new values
         radius = r;
         debugDistance = distance; // DEBUG
-        debugOriginX = targetX;  // DEBUG
-        debugOriginY = targetY;  // DEBUG
-        targetX = targetX + Math.cos(angle) * distance;
-        targetY = targetY + Math.sin(angle) * distance;
-        currentTrialIndex += 1;
-        currentTrial = new Trial(cursorX, cursorY, targetX, targetY, radius);
-        currentTask.addTrial(currentTrial);
+        debugOriginX = currentX;  // DEBUG
+        debugOriginY = currentY;  // DEBUG
+        currentX = currentX + Math.cos(angle) * distance;
+        currentY = currentY + Math.sin(angle) * distance;
+        currentTrial += 1;
+        trialStarts.push(Date.now());
+        trialStartTimeStamp = performance.now();
+
     }
 
-    // handles fullscreen change
-    function handleFullscreenChange() {
-        isFullscreen = !!document.fullscreenElement;
 
-        // center target
-        setTimeout(() => {
-            screenWidth = window.innerWidth;
-            screenHeight = window.innerHeight;
-            targetX = screenWidth / 2;
-            targetY = screenHeight / 2;
-            radius = 13 * pxPerMm;
-        }, 100);
-    }
-
-    function handleTaskStart(cursorX, cursorY) {
+    function handleTaskStart() {
+        console.log("Starting task...");
+        document.documentElement.requestFullscreen();
+        currentX = screenWidth / 2;
+        currentY = screenHeight / 2;
+        radius = 13 * pxPerMm;
         status = TaskStatus.RUNNING;
 
         currentTask = new Task(TaskType.CLICKING);
@@ -231,23 +225,19 @@
 
     // runs on client after page load
     onMount(() => {
-        // Detect fullscreen state
-        isFullscreen = !!document.fullscreenElement;
-        handleFullscreenChange();
-
+        
         // Add event listeners
         window.addEventListener('click', handleClick);
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        
 
         // Clean up function for event listeners
         return () => {
             window.removeEventListener('click', handleClick);
-            document.removeEventListener('fullscreenchange', handleFullscreenChange)
         }
     });
 </script>
 
-{#if isFullscreen}
+
     {#if status == TaskStatus.IDLE}
         <h1 class="text-2xl font-bold" style:top="calc(50% - {radius}px - 50px)">Click the target to start the test</h1> 
     {/if}
@@ -257,9 +247,7 @@
     {#if enableDebug}
         <DebugOverlay currentX={debugOriginX} currentY={debugOriginY} {screenWidth} {screenHeight} distance={debugDistance} r={radius} /> <!-- DEBUG -->
     {/if}
-{:else}
-    <RequestFullscreen />
-{/if}
+
 
 <style>
 

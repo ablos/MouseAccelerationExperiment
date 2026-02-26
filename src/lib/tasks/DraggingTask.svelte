@@ -1,5 +1,6 @@
 <script>
-    let { pxPerMm, onComplete } = $props();
+    import { getContext } from "svelte";
+    const { pxPerMm, onComplete } = getContext('task');
 </script>
 
 <div class="container">
