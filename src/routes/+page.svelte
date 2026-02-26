@@ -1,6 +1,18 @@
 <script>
-    import ClickTask from "$lib/tasks/ClickTask.svelte";
-	import SliderTask from "$lib/tasks/SliderTask.svelte";
+    import { onMount } from 'svelte';
+    import ClickTask from "$lib/ClickTask.svelte";
+    import Calibration from "$lib/Calibration.svelte";
+
+    let pxPerMm = $state(null);
+
+    onMount(() => {
+        const stored = localStorage.getItem('pxPerMm');
+        if (stored) pxPerMm = Number(stored);
+    });
 </script>
 
-<SliderTask />
+{#if pxPerMm === null}
+    <Calibration oncalibrated={(value) => pxPerMm = value} />
+{:else}
+    <ClickTask {pxPerMm} />
+{/if}

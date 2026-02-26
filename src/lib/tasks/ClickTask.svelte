@@ -1,11 +1,17 @@
 <script>
     import { onMount } from 'svelte';
     import ClickTarget from "./ClickTarget.svelte";
-    import RequestFullscreen from '../RequestFullscreen.svelte';
-    import { TaskStatus } from '../enums';
+    import RequestFullscreen from './RequestFullscreen.svelte';
+    import DebugOverlay from './DebugOverlay.svelte'; // DEBUG
+    import { TaskStatus } from './enums';
 
-    const radii = [10, 20, 40];
-    const distances = [100, 200, 400];
+    const enableDebug = true;
+
+    let { pxPerMm } = $props();
+
+    // Values in mm, designed for a reference 1080p screen
+    const radii = [3, 5, 10];
+    const distances = [30, 60, 120];
 
     // Create and shuffle trial combinations
     let trials = radii.flatMap(r => distances.map(distance => ({ r, distance })));
@@ -19,8 +25,13 @@
     let currentY = $state(0);
     let screenWidth = $state(0);
     let screenHeight = $state(0);
-    let radius = $state(50);
+    let radius = $state(0);
     let innerPercentage = 0.2;
+
+
+    let debugDistance = $state(0); // DEBUG
+    let debugOriginX = $state(0); // DEBUG
+    let debugOriginY = $state(0); // DEBUG
 
     function isInBounds(x, y, r) {
         return x >= r && x <= screenWidth - r && y >= r && y <= screenHeight - r;
@@ -81,8 +92,9 @@
         // Retrieve trial data for current trial
         let { r, distance } = trials[currentTrial];
 
-        console.log(r);
-        console.log(distance);
+        // convert mm to pixels
+        r *= pxPerMm;
+        distance *= pxPerMm;
 
         // Get all intersection angles
         let angles = [];
@@ -91,12 +103,46 @@
         angles.push(...getIntersectionAnglesVertical(r, distance, r));
         angles.push(...getIntersectionAnglesVertical(screenWidth - r, distance, r));
 
-        console.log(angles);
+        angles.sort((a, b) => a - b);
+
+        // Build a list of valid arcs by testing each segment's midpoint
+        let validArcs = [];
+
+        for (let i = 0; i < angles.length; i++) {
+            const start = angles[i];
+            const end = i + 1 < angles.length ? angles[i + 1] : angles[0] + Math.PI * 2;
+            const mid = (start + end) / 2;
+
+            const mx = currentX + distance * Math.cos(mid);
+            const my = currentY + distance * Math.sin(mid);
+
+            if (isInBounds(mx, my, r))
+                validArcs.push({ start, end });
+        }
+
+        // Pick a random angle weighted by arc length
+        const totalLength = validArcs.reduce((sum, arc) => sum + (arc.end - arc.start), 0);
+        let pick = Math.random() * totalLength;
+
+        let angle = 0;
+        for (const arc of validArcs) {
+            const len = arc.end - arc.start;
+
+            if (pick <= len) {
+                angle = arc.start + pick;
+                break;
+            }
+
+            pick -= len;
+        }
 
         // Set new values
         radius = r;
-        // currentX = currentX + Math.cos(angle) * distance;
-        // currentY = currentY + Math.sin(angle) * distance;
+        debugDistance = distance; // DEBUG
+        debugOriginX = currentX;  // DEBUG
+        debugOriginY = currentY;  // DEBUG
+        currentX = currentX + Math.cos(angle) * distance;
+        currentY = currentY + Math.sin(angle) * distance;
         currentTrial += 1;
     }
 
@@ -110,6 +156,7 @@
             screenHeight = window.innerHeight;
             currentX = screenWidth / 2;
             currentY = screenHeight / 2;
+            radius = 13 * pxPerMm;
         }, 100);
     }
 
@@ -168,6 +215,10 @@
     {/if}
 
     <ClickTarget {radius} {innerPercentage} x={currentX} y={currentY} />
+
+    {#if enableDebug}
+        <DebugOverlay currentX={debugOriginX} currentY={debugOriginY} {screenWidth} {screenHeight} distance={debugDistance} r={radius} /> <!-- DEBUG -->
+    {/if}
 {:else}
     <RequestFullscreen />
 {/if}
