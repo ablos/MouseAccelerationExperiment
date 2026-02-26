@@ -1,9 +1,9 @@
 <script>
     import { onMount } from 'svelte';
     import ClickTarget from "./ClickTarget.svelte";
-    import RequestFullscreen from './RequestFullscreen.svelte';
+    import RequestFullscreen from '$lib/RequestFullscreen.svelte';
     import DebugOverlay from './DebugOverlay.svelte'; // DEBUG
-    import { TaskStatus } from './enums';
+    import { TaskStatus } from '$lib/enums';
 
     const enableDebug = true;
 

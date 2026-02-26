@@ -1,6 +1,6 @@
 <script>
     import { onMount } from 'svelte';
-    import ClickTask from "$lib/ClickTask.svelte";
+    import ClickTask from "$lib/tasks/ClickTask.svelte";
     import Calibration from "$lib/Calibration.svelte";
 
     let pxPerMm = $state(null);
