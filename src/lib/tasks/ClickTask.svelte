@@ -1,13 +1,14 @@
 <script>
-    import { onMount } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
     import ClickTarget from "./ClickTarget.svelte";
     import RequestFullscreen from '$lib/RequestFullscreen.svelte';
     import DebugOverlay from './DebugOverlay.svelte'; // DEBUG
     import { TaskStatus } from '$lib/enums';
+    import { createMouseSampler } from './MouseSampler';
 
     const enableDebug = true;
 
-    let { pxPerMm } = $props();
+    let { pxPerMm, onComplete } = $props();
 
     // Values in mm, designed for a reference 1080p screen
     const radii = [3, 5, 10];
@@ -28,10 +29,19 @@
     let radius = $state(0);
     let innerPercentage = 0.2;
 
-
     let debugDistance = $state(0); // DEBUG
     let debugOriginX = $state(0); // DEBUG
     let debugOriginY = $state(0); // DEBUG
+    let trialStartTimeStamp = 0;
+    let taskStart = new Date();
+    let trialStarts = [];
+    let distancesFromTarget = [];
+
+    function onMouseSample(x, y, timestamp) {
+        
+    }
+
+    const sampler = createMouseSampler(onMouseSample);
 
     function isInBounds(x, y, r) {
         return x >= r && x <= screenWidth - r && y >= r && y <= screenHeight - r;
@@ -120,7 +130,7 @@
                 validArcs.push({ start, end });
         }
 
-        // Pick a random angle weighted by arc length
+        // Pick a random angle
         const totalLength = validArcs.reduce((sum, arc) => sum + (arc.end - arc.start), 0);
         let pick = Math.random() * totalLength;
 
@@ -144,6 +154,8 @@
         currentX = currentX + Math.cos(angle) * distance;
         currentY = currentY + Math.sin(angle) * distance;
         currentTrial += 1;
+        trialStarts.push(Date.now());
+        trialStartTimeStamp = performance.now();
     }
 
     // handles fullscreen change
@@ -160,6 +172,26 @@
         }, 100);
     }
 
+    function handleTaskStart() {
+        console.log("Starting task...");
+        document.documentElement.requestFullscreen();
+        status = TaskStatus.RUNNING;
+        taskStart = Date.now();
+        sampler.start();
+        nextPosition();
+    }
+
+    function handleTaskDone() {
+        const trialEnd = Date.now();
+        sampler.stop();
+
+        status = TaskStatus.DONE;
+        console.log("test done");
+        document.exitFullscreen();
+
+        onComplete();
+    }
+
     // handles click functionality
     function handleClick(e) {
         // Don't do anything if we are not in fullscreen
@@ -171,10 +203,7 @@
         // if status is idle and we hit the target, start the task
         if (status == TaskStatus.IDLE) {
             if (dist <= radius) {
-                console.log("Starting task...");
-                document.documentElement.requestFullscreen();
-                status = TaskStatus.RUNNING;
-                nextPosition();
+                handleTaskStart();
             }
             return;
         }
@@ -186,6 +215,15 @@
             console.log("Hit!");
         else
             console.log("Miss.");
+
+        // Store distance
+        distancesFromTarget.push(dist);
+
+        // Check if completed
+        if (currentTrial == trials.length - 1) {
+            handleTaskDone();
+            return;
+        }
 
         // Move to next position
         nextPosition();

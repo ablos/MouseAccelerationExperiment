@@ -5,7 +5,8 @@ One table for participant data
 One table for session data
     - SessionID
     - ParticipantID (foreign)
-    - date
+    - Session start time
+    - Session end time
     - screen info
 
 One table for task types
@@ -16,16 +17,25 @@ One table for tasks
     - TaskID
     - TaskTypeID (foreign)
     - SessionID (foreign)
-    - Raw task data
-        + Task completion time
-        + Euclidian distance from target
-        + Submovement count
-        + Path length ratio
-    - (Maybe) summary data
+    - Task start time
+    - Task end time
+
+One table for trials
+    - TrialID
+    - TaskID (foreign)
+    - Trial start time
+    - Trial end time
+    - StartX
+    - StartY
+    - EndX
+    - EndY
+    - TargetX
+    - TargetY
+    - TargetSize
 
 One table for raw mouse coordinates
     - CoordinateID
-    - TaskID (foreign)
+    - TrialID (foreign)
     - TimeStamp
     - X
     - Y
