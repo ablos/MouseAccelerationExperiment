@@ -5,6 +5,7 @@
     import DebugOverlay from './DebugOverlay.svelte'; // DEBUG
     import { createMouseSampler } from './MouseSampler';
     import { TaskStatus, TaskType } from '$lib/enums';
+	import { Task, Trial, MouseCoordinate } from '$lib/dataTypes';
 
     const enableDebug = true;
 
@@ -19,11 +20,11 @@
     trials = trials.sort(() => Math.random() - 0.5);
 
     // set state variables
-    let currentTrial = $state(0);
+    let currentTrialIndex = $state(0);
     let status = $state(TaskStatus.IDLE);
     let isFullscreen = $state(false);
-    let currentX = $state(0);
-    let currentY = $state(0);
+    let targetX = $state(0);
+    let targetY = $state(0);
     let screenWidth = $state(0);
     let screenHeight = $state(0);
     let radius = $state(0);
@@ -32,13 +33,12 @@
     let debugDistance = $state(0); // DEBUG
     let debugOriginX = $state(0); // DEBUG
     let debugOriginY = $state(0); // DEBUG
-    let trialStartTimeStamp = 0;
-    let taskStart = new Date();
-    let trialStarts = [];
-    let distancesFromTarget = [];
+
+    let currentTask = null;
+    let currentTrial = null;
 
     function onMouseSample(x, y, timestamp) {
-        
+        currentTrial.addCoordinate(new MouseCoordinate(x, y, currentTrial.startTime));
     }
 
     const sampler = createMouseSampler(onMouseSample);
@@ -51,16 +51,16 @@
         let result = []
 
         // Check if circle center is even close enough to intersect
-        if (Math.abs(lineX - currentX) >= distance)
+        if (Math.abs(lineX - targetX) >= distance)
             return result;
 
         // Get the two angles
-        let t1 = Math.acos((lineX - currentX) / distance);
+        let t1 = Math.acos((lineX - targetX) / distance);
         let t2 = (Math.PI * 2) - t1;
 
         // Calculate the y values for these angles
-        let y1 = currentY + distance * Math.sin(t1);
-        let y2 = currentY + distance * Math.sin(t2);
+        let y1 = targetY + distance * Math.sin(t1);
+        let y2 = targetY + distance * Math.sin(t2);
 
         // Check if the resulting coordinates are in bounds to be included
         if (isInBounds(lineX, y1, r))
@@ -76,16 +76,16 @@
         let result = [];
 
         // Check if circle is even close enough to intersect
-        if (Math.abs(lineY - currentY) >= distance)
+        if (Math.abs(lineY - targetY) >= distance)
             return result;
 
         // Get the two angles
-        let t1 = Math.asin((lineY - currentY) / distance);
+        let t1 = Math.asin((lineY - targetY) / distance);
         let t2 = Math.PI - t1;
 
         // Calculate the x values for these angles
-        let x1 = currentX + distance * Math.cos(t1);
-        let x2 = currentX + distance * Math.cos(t2);
+        let x1 = targetX + distance * Math.cos(t1);
+        let x2 = targetX + distance * Math.cos(t2);
 
         // Check if the resulting coordinates are in bounds to be included
         if (isInBounds(x1, lineY, r))
@@ -98,9 +98,9 @@
     }
 
     // Calculates the next position based on the trials list
-    function nextPosition() {
+    function runTrial(cursorX, cursorY) {
         // Retrieve trial data for current trial
-        let { r, distance } = trials[currentTrial];
+        let { r, distance } = trials[currentTrialIndex];
 
         // convert mm to pixels
         r *= pxPerMm;
@@ -123,8 +123,8 @@
             const end = i + 1 < angles.length ? angles[i + 1] : angles[0] + Math.PI * 2;
             const mid = (start + end) / 2;
 
-            const mx = currentX + distance * Math.cos(mid);
-            const my = currentY + distance * Math.sin(mid);
+            const mx = targetX + distance * Math.cos(mid);
+            const my = targetY + distance * Math.sin(mid);
 
             if (isInBounds(mx, my, r))
                 validArcs.push({ start, end });
@@ -149,22 +149,13 @@
         // Set new values
         radius = r;
         debugDistance = distance; // DEBUG
-        debugOriginX = currentX;  // DEBUG
-        debugOriginY = currentY;  // DEBUG
-        currentX = currentX + Math.cos(angle) * distance;
-        currentY = currentY + Math.sin(angle) * distance;
-        currentTrial += 1;
-        trialStarts.push(Date.now());
-        trialStartTimeStamp = performance.now();
-
-        // Aris' temporary logic to set task's status as done. You can change it
-        if(currentTrial === trials.length){
-            console.log("ENDED")
-            status = TaskStatus.DONE
-            
-        }
-
-
+        debugOriginX = targetX;  // DEBUG
+        debugOriginY = targetY;  // DEBUG
+        targetX = targetX + Math.cos(angle) * distance;
+        targetY = targetY + Math.sin(angle) * distance;
+        currentTrialIndex += 1;
+        currentTrial = new Trial(cursorX, cursorY, targetX, targetY, radius);
+        currentTask.addTrial(currentTrial);
     }
 
     // handles fullscreen change
@@ -175,30 +166,28 @@
         setTimeout(() => {
             screenWidth = window.innerWidth;
             screenHeight = window.innerHeight;
-            currentX = screenWidth / 2;
-            currentY = screenHeight / 2;
+            targetX = screenWidth / 2;
+            targetY = screenHeight / 2;
             radius = 13 * pxPerMm;
         }, 100);
     }
 
-    function handleTaskStart() {
-        console.log("Starting task...");
-        document.documentElement.requestFullscreen();
+    function handleTaskStart(cursorX, cursorY) {
         status = TaskStatus.RUNNING;
-        taskStart = Date.now();
+
+        currentTask = new Task("click");
+
         sampler.start();
-        nextPosition();
+        runTrial(cursorX, cursorY);
     }
 
     function handleTaskDone() {
-        const trialEnd = Date.now();
+        currentTask.complete();
         sampler.stop();
-
         status = TaskStatus.DONE;
-        console.log("test done");
         document.exitFullscreen();
 
-        onComplete()
+        onComplete(currentTask)
     }
 
     // handles click functionality
@@ -207,12 +196,12 @@
         if (!isFullscreen) return;
 
         // calculate Euclidian distance from cursor to target
-        const dist = Math.sqrt((currentX - e.clientX) ** 2 + (currentY - e.clientY) ** 2);
+        const dist = Math.sqrt((targetX - e.clientX) ** 2 + (targetY - e.clientY) ** 2);
         
         // if status is idle and we hit the target, start the task
         if (status == TaskStatus.IDLE) {
             if (dist <= radius) {
-                handleTaskStart();
+                handleTaskStart(e.clientX, e.clientY);
             }
             return;
         }
@@ -225,17 +214,17 @@
         else
             console.log("Miss.");
 
-        // Store distance
-        distancesFromTarget.push(dist);
+        // Store trial
+        currentTrial.complete(e.clientX, e.clientY);
 
         // Check if completed
-        if (currentTrial == trials.length - 1) {
+        if (currentTrialIndex == trials.length - 1) {
             handleTaskDone();
             return;
         }
 
         // Move to next position
-        nextPosition();
+        runTrial(e.clientX, e.clientY);
     }
 
     // runs on client after page load
@@ -261,7 +250,7 @@
         <h1 class="text-2xl font-bold" style:top="calc(50% - {radius}px - 50px)">Click the target to start the test</h1> 
     {/if}
 
-    <ClickTarget {radius} {innerPercentage} x={currentX} y={currentY} />
+    <ClickTarget {radius} {innerPercentage} x={targetX} y={targetY} />
 
     {#if enableDebug}
         <DebugOverlay currentX={debugOriginX} currentY={debugOriginY} {screenWidth} {screenHeight} distance={debugDistance} r={radius} /> <!-- DEBUG -->

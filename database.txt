@@ -7,7 +7,9 @@ One table for session data
     - ParticipantID (foreign)
     - Session start time
     - Session end time
-    - screen info
+    - ScreenResX
+    - ScreenResY
+    - Screen pxPerMm
 
 One table for task types
     - TaskTypeID
