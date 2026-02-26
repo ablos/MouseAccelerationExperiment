@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import SliderTarget from './SliderTarget.svelte';
 	import { TaskStatus } from '$lib/enums';
+  import { TaskType } from '$lib/enums';
 
   const ZONE_WIDTHS = [20, 40, 80];
   const DISTANCES   = [100, 250, 500];
@@ -15,6 +16,8 @@
   let status       = $state(TaskStatus.IDLE);
 
   let trial = $derived(trials[currentIndex]);
+
+  let {pxPerMm, changeTaskType} = $props();
 
   function shuffle(arr) {
     const a = [...arr];
@@ -48,18 +51,18 @@
       ...result,
     }];
 
-    console.log(results)
-
     // Short delay so user sees the zone highlight before advancing
     setTimeout(() => {
-      if (currentIndex + 1 >= trials.length) {
+      // -15 only for debugging
+      if (currentIndex + 1 >= trials.length - 15) {
         status = TaskStatus.DONE;
+        changeTaskType(TaskType.DRAGGING)
+        
       } else {
         currentIndex++;
       }
     }, 200);
   }
-
 
 </script>
 

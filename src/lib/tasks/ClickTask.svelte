@@ -3,12 +3,12 @@
     import ClickTarget from "./ClickTarget.svelte";
     import RequestFullscreen from '$lib/RequestFullscreen.svelte';
     import DebugOverlay from './DebugOverlay.svelte'; // DEBUG
-    import { TaskStatus } from '$lib/enums';
     import { createMouseSampler } from './MouseSampler';
+    import { TaskStatus, TaskType } from '$lib/enums';
 
     const enableDebug = true;
 
-    let { pxPerMm, onComplete } = $props();
+    let { pxPerMm, changeTaskType } = $props();
 
     // Values in mm, designed for a reference 1080p screen
     const radii = [3, 5, 10];
@@ -156,6 +156,15 @@
         currentTrial += 1;
         trialStarts.push(Date.now());
         trialStartTimeStamp = performance.now();
+
+        // Aris' temporary logic to set task's status as done. You can change it
+        if(currentTrial === trials.length){
+            console.log("ENDED")
+            status = TaskStatus.DONE
+            changeTaskType(TaskType.SLIDER)
+        }
+
+
     }
 
     // handles fullscreen change
