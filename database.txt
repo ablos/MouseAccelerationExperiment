@@ -1,0 +1,31 @@
+One table for participant data
+    - ParticipantID
+    - Some info about the participant
+
+One table for session data
+    - SessionID
+    - ParticipantID (foreign)
+    - date
+    - screen info
+
+One table for task types
+    - TaskTypeID
+    - Name
+
+One table for tasks
+    - TaskID
+    - TaskTypeID (foreign)
+    - SessionID (foreign)
+    - Raw task data
+        + Task completion time
+        + Euclidian distance from target
+        + Submovement count
+        + Path length ratio
+    - (Maybe) summary data
+
+One table for raw mouse coordinates
+    - CoordinateID
+    - TaskID (foreign)
+    - TimeStamp
+    - X
+    - Y
