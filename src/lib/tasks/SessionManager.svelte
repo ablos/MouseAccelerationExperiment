@@ -1,6 +1,6 @@
 <script>
 	import { TaskType } from "$lib/enums";
-	import { onMount } from "svelte";
+	import { onMount, setContext } from "svelte";
     import ClickTask from "./ClickTask.svelte";
 	import DraggingTask from "./DraggingTask.svelte";
 	import SliderTask from "./SliderTask.svelte";
@@ -9,6 +9,9 @@
 
     const taskOrder = [TaskType.CLICKING, TaskType.SLIDER, TaskType.DRAGGING]
     let currentTaskIndex = $state(0);
+    // let screenWidth = $state(0);
+    // let screenHeight = $state(0);
+    let isFullscreen = $state(false);
     let sessionId = null;
 
     async function onStart() {
@@ -63,14 +66,22 @@
 
     // Runs on client after page load
     onMount(onStart);
+    setContext('task', {
+        get pxPerMm() { return pxPerMm },
+        get isFullscreen() {return isFullscreen},
+        // get screenWidth() {return screenWidth},
+        // get screenHeight() {return screenHeight},
+        setIsFullscreen: (val) => {isFullscreen = val},
+        onComplete,
+    })
 </script>
 
 {#if taskOrder[currentTaskIndex] === TaskType.CLICKING}
-    <ClickTask {pxPerMm} onComplete={onTaskComplete} />
+    <ClickTask />
 {:else if taskOrder[currentTaskIndex] === TaskType.SLIDER }
-    <SliderTask {pxPerMm} onComplete={onTaskComplete} />
+    <SliderTask />
 {:else if taskOrder[currentTaskIndex] === TaskType.DRAGGING }
-    <DraggingTask {pxPerMm} onComplete={onTaskComplete} />
+    <DraggingTask />
 {:else}
     <div>Task not found</div>
 {/if}
