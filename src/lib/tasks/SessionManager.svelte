@@ -4,6 +4,7 @@
     import ClickTask from "./ClickTask.svelte";
 	import DraggingTask from "./DraggingTask.svelte";
 	import SliderTask from "./SliderTask.svelte";
+	import RequestFullscreen from "$lib/RequestFullscreen.svelte";
     
     let { pxPerMm } = $props();
 
@@ -13,6 +14,7 @@
     // let screenHeight = $state(0);
     let isFullscreen = $state(false);
     let sessionId = null;
+    let container = $state(null)
 
     async function onStart() {
         // TODO: Remove this in production obviously
@@ -63,26 +65,36 @@
         else
             currentTaskIndex++;
     }
+    function enterFullscreen() {
+        container.requestFullscreen();
+        isFullscreen = true;
+    }
 
     // Runs on client after page load
     onMount(onStart);
     setContext('task', {
         get pxPerMm() { return pxPerMm },
         get isFullscreen() {return isFullscreen},
-        // get screenWidth() {return screenWidth},
-        // get screenHeight() {return screenHeight},
         setIsFullscreen: (val) => {isFullscreen = val},
-        onComplete,
+        onComplete: onTaskComplete,
     })
 </script>
 
-{#if taskOrder[currentTaskIndex] === TaskType.CLICKING}
-    <ClickTask />
-{:else if taskOrder[currentTaskIndex] === TaskType.SLIDER }
-    <SliderTask />
-{:else if taskOrder[currentTaskIndex] === TaskType.DRAGGING }
-    <DraggingTask />
-{:else}
-    <div>Task not found</div>
-{/if}
+<!-- wrapper element should be referenced to keep fullscreen mode throughout the application -->
+<div bind:this={container} class="w-screen h-screen bg-white">
+    {#if !isFullscreen}
+        <RequestFullscreen {enterFullscreen} />
+    {:else if taskOrder[currentTaskIndex] === TaskType.CLICKING}
+        <ClickTask />
+    {:else if taskOrder[currentTaskIndex] === TaskType.SLIDER }
+        <SliderTask />
+    {:else if taskOrder[currentTaskIndex] === TaskType.DRAGGING }
+        <DraggingTask />
+    {:else}
+        <div>Task not found</div>
+    {/if}
+</div>
+
+
+
 

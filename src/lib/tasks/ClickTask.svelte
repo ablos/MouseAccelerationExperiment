@@ -22,8 +22,6 @@
     // set state variables
     let currentTrialIndex = $state(0);
     let status = $state(TaskStatus.IDLE);
-    let currentX = $state(0);
-    let currentY = $state(0);
     let screenWidth = $state(0);
     let screenHeight = $state(0);
     let targetX = $state(0);
@@ -148,15 +146,16 @@
         }
 
         // Set new values
+         // Set new values
         radius = r;
         debugDistance = distance; // DEBUG
-        debugOriginX = currentX;  // DEBUG
-        debugOriginY = currentY;  // DEBUG
-        currentX = currentX + Math.cos(angle) * distance;
-        currentY = currentY + Math.sin(angle) * distance;
-        currentTrial += 1;
+        debugOriginX = targetX;  // DEBUG
+        debugOriginY = targetY;  // DEBUG
+        targetX = targetX + Math.cos(angle) * distance;
+        targetY = targetY + Math.sin(angle) * distance;
+        currentTrialIndex += 1;
         currentTrial = new Trial(cursorX, cursorY, targetX, targetY, radius);
-        currentTask.addTrial(currentTrial);     
+        currentTask.addTrial(currentTrial);
 
     }
 
@@ -187,7 +186,7 @@
         currentTask.complete();
         sampler.stop();
         status = TaskStatus.DONE;
-        document.exitFullscreen();
+        // document.exitFullscreen();
 
         console.log(currentTask);
 
@@ -251,19 +250,16 @@
 </script>
 
 
-    {#if isFullscreen}
-        {#if status == TaskStatus.IDLE}
-            <h1 class="text-2xl font-bold" style:top="calc(50% - {radius}px - 50px)">Click the target to start the test</h1> 
-        {/if}
+    {#if status == TaskStatus.IDLE}
+        <h1 class="text-2xl font-bold" style:top="calc(50% - {radius}px - 50px)">Click the target to start the test</h1> 
+    {/if}
 
-        <ClickTarget {radius} {innerPercentage} x={targetX} y={targetY} />
+    <ClickTarget {radius} {innerPercentage} x={targetX} y={targetY} />
 
     {#if enableDebug}
         <DebugOverlay currentX={debugOriginX} currentY={debugOriginY} {screenWidth} {screenHeight} distance={debugDistance} r={radius} /> <!-- DEBUG -->
     {/if}
-    {:else}
-        <RequestFullscreen />
-    {/if}
+    
 
 
 <style>
