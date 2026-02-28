@@ -4,7 +4,11 @@ export const participants = pgTable('participants', {
 	id: serial('id').primaryKey(),
 	code: text('code').notNull().unique(),
 	group: text('group'),
-	age: integer('age')
+	age: integer('age'),
+	gender: text('gender'),
+	handedness: text('handedness'),
+	hoursPerWeek: integer('hours_per_week'),
+	gamingExperience: text('gaming_experience')
 });
 
 export const sessions = pgTable('sessions', {
