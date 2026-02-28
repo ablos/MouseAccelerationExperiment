@@ -11,6 +11,15 @@ export const participants = pgTable('participants', {
 	gamingExperience: text('gaming_experience')
 });
 
+export const participantContacts = pgTable('participant_contacts', {
+	id: serial('id').primaryKey(),
+	participantId: integer('participant_id').references(() => participants.id),
+	name: text('name'),
+	email: text('email'),
+	phone: text('phone'),
+	notes: text('notes')
+});
+
 export const sessions = pgTable('sessions', {
 	id: serial('id').primaryKey(),
 	participantId: integer('participant_id')

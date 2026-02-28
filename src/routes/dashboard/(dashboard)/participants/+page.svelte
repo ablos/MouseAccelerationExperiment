@@ -1,8 +1,16 @@
 <script>
     import Button from "$lib/components/ui/button/button.svelte";
-    import { Mars, Venus, Asterisk } from 'lucide-svelte';
+    import { Label } from "$lib/components/ui/label";
+    import Input from "$lib/components/ui/input/input.svelte";
+    import Textarea from "$lib/components/ui/textarea/textarea.svelte";
+    import { Mars, Venus, Asterisk, X } from 'lucide-svelte';
+    import * as Dialog from '$lib/components/ui/dialog';
     
-    let { data } = $props();
+    let { data, form } = $props();
+    
+    let messageDismissed = $state(false);
+    
+    
     
     let totalParticipants = $derived(data.participants.length);
     let withSession = $derived(new Set(data.sessions.map(s => s.participantId)).size);
@@ -86,7 +94,7 @@
         {/if}
         
         <!-- View button -->
-        <Button variant="outline" href="/dashboard/participant/{participant.id}" class="w-1/2 cursor-pointer">
+        <Button variant="outline" href="/dashboard/participants/{participant.id}" class="w-1/2 cursor-pointer">
             View
         </Button>
     </div>
@@ -97,16 +105,79 @@
     <div class="flex w-full border-b border-zinc-700 items-center py-4 px-4 justify-between">
         <h1 class="text-2xl">Participants</h1>
         
+        <!-- Stats -->
         {@render stat('Enrolled', `${withSession} / ${totalParticipants}`)}
         {@render stat('Groups', `${controlCount}c / ${experimentalCount}e / ${unassignedCount}u`)}
         {@render stat('Avg. Age', `${avgAge}`)}
         {@render stat('Handedness', `${rightCount}r / ${leftCount}l`)}
         {@render stat('Gender', `${maleCount}m / ${femaleCount}f / ${otherCount}o`)}
-    
-        <Button class="cursor-pointer">
-            + New Participant
-        </Button>
+        
+        <!-- New Participant Dialog -->
+        <Dialog.Root>
+            <Dialog.Trigger>
+                {#snippet child({ props })}
+                    <Button {...props} class="cursor-pointer">+ New Participant</Button>
+                {/snippet}
+            </Dialog.Trigger>
+            
+            <Dialog.Content>
+                <Dialog.Header>
+                    <Dialog.Title>Add new participant</Dialog.Title>
+                    <Dialog.Description>
+                        This will send an invite to the participant. This data is stored in a separate database that will be deleted after the study and is for contact purposes only.
+                        <br><br>
+                        Note: The name you enter here will be used in the invitation email.
+                    </Dialog.Description>
+                </Dialog.Header>
+                
+                <form id="new-participant-form" method="POST" action="?/createParticipant" class="flex flex-col w-full gap-2">
+                    <Label for="name">Name<span class="text-red-600">*</span></Label>
+                    <Input name="name" id="name" type="text" required />
+                    
+                    <Label for="email">Email<span class="text-red-600">*</span></Label>
+                    <Input name="email" id="email" type="email" required />
+                    
+                    <Label for="phone">Phone</Label>
+                    <Input name="phone" id="phone" type="tel" />
+                    
+                    <Label for="notes">Notes</Label>
+                    <Textarea name="notes" id="notes" />
+                </form>
+                
+                <Dialog.Footer class="flex justify-center sm:justify-center">
+                    <Dialog.Close>
+                        {#snippet child({ props })}
+                            <Button {...props} variant="outline" class="cursor-pointer flex-1">Cancel</Button>
+                        {/snippet}
+                    </Dialog.Close>
+                    
+                    <Button type="submit" form="new-participant-form" class="cursor-pointer flex-1">Send Invitation</Button>
+                </Dialog.Footer>
+            </Dialog.Content>
+        </Dialog.Root>
     </div>
+    
+    <!-- Participant invite success message -->
+    {#if form?.code && !form?.error && !messageDismissed}
+        <div class="mx-4 px-4 py-2.5 bg-green-900/30 border border-green-800 text-green-300 rounded-lg text-sm flex items-center justify-between gap-4">
+            <span>Invitation sent successfully. Participant code: <span class="font-mono text-zinc-200 bg-zinc-800 px-1.5 py-0.5 rounded">{form.code}</span></span>
+            <button onclick={() => messageDismissed = true} class="text-green-600 hover:text-green-400 cursor-pointer shrink-0">
+                <X size={14} />
+            </button>
+        </div>
+    {/if}
+    
+    <!-- Participant invite error message -->
+    {#if form?.error && !messageDismissed}
+        <div class="mx-4 px-4 py-2.5 bg-red-900/30 border border-red-800 text-red-300 rounded-lg text-sm">
+            {form.error}
+            {#if form.participantId}
+                <a href="/dashboard/participants/{form.participantId}" class="text-zinc-200 underline ml-1">
+                    View participant {form.code}
+                </a>
+            {/if}
+        </div>
+    {/if}
     
     <!-- Participant list -->
     <div class="flex flex-col">
