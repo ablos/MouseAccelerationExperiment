@@ -1,6 +1,5 @@
 <script>
   import { untrack } from 'svelte';
-  import { getContext } from 'svelte';
   let {
     zoneWidth   = 40,   // px at 1080p baseline
     distance    = 250,  // px at 1080p baseline
@@ -10,7 +9,6 @@
   const TRACK_WIDTH_BASE = 800;
   const HANDLE_RADIUS    = 16;
   const scaleX = 1;
-  const { isFullscreen } = getContext('task');
   // Layout (scaled px)
   let trackWidth  = $state(0);
   let handleX     = $state(0);
@@ -90,8 +88,6 @@
   }
 
   function onMouseDown(e) {
-    // Don't do anything if we are not in fullscreen
-    if (!isFullscreen) return;
     if (committed) {
       return;
     }

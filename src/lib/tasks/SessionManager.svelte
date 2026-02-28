@@ -4,9 +4,9 @@
     import ClickTask from "./ClickTask.svelte";
 	import DraggingTask from "./DraggingTask.svelte";
 	import SliderTask from "./SliderTask.svelte";
-	import RequestFullscreen from "$lib/RequestFullscreen.svelte";
 	import TaskExplanation from "./TaskExplanation.svelte";
 	import { goto } from "$app/navigation";
+	import Button from "$lib/components/ui/button/button.svelte";
     
     let { pxPerMm } = $props();
 
@@ -16,6 +16,8 @@
     let sessionId = null;
     let container = $state(null);
     let taskExplained = $state(false);
+    
+    let debugMode = $state(false);
 
     async function onStart() {
         // Create session in DB
@@ -68,8 +70,7 @@
     onMount(onStart);
     setContext('task', {
         get pxPerMm() { return pxPerMm },
-        get isFullscreen() {return isFullscreen},
-        setIsFullscreen: (val) => {isFullscreen = val},
+        get debugMode() { return debugMode },
         onComplete: onTaskComplete,
     });
 </script>
@@ -77,7 +78,13 @@
 <!-- wrapper element should be referenced to keep fullscreen mode throughout the application -->
 <div bind:this={container} class="w-screen h-screen bg-white">
     {#if !isFullscreen}
-        <RequestFullscreen {enterFullscreen} />
+        <div class="flex flex-col items-center justify-center w-screen h-screen">
+            <h1 class="text-2xl font-bold mb-3">Please go into fullcreen by clicking the button below</h1>
+            
+            <Button onclick={enterFullscreen}>
+                Enable Fullscreen
+            </Button>
+        </div>
     {:else if !taskExplained}
         <TaskExplanation taskType={taskOrder[currentTaskIndex]} onstart={() => taskExplained = true} />
     {:else if taskOrder[currentTaskIndex] === TaskType.CLICKING}

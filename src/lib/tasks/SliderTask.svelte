@@ -17,7 +17,7 @@
 
   let trial = $derived(trials[currentIndex]);
 
-  const { pxPerMm, onComplete } = getContext('task');
+  const { pxPerMm, onComplete, debugMode } = getContext('task');
 
   function shuffle(arr) {
     const a = [...arr];
@@ -54,7 +54,7 @@
     // Short delay so user sees the zone highlight before advancing
     setTimeout(() => {
       // -15 only for debugging
-      if (currentIndex + 1 >= trials.length - 15) {
+      if (currentIndex + 1 >= trials.length - (debugMode ? 15 : 0)) {
         status = TaskStatus.DONE;
         onComplete()
         

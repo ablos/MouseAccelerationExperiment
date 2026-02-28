@@ -1,15 +1,12 @@
 <script>
     import { onMount, getContext } from 'svelte';
     import ClickTarget from "./ClickTarget.svelte";
-    import DebugOverlay from './DebugOverlay.svelte'; // DEBUG
+    import DebugOverlay from './DebugOverlay.svelte';
     import { createMouseSampler } from './MouseSampler';
     import { TaskStatus, TaskType } from '$lib/enums';
 	import { Task, Trial, MouseCoordinate } from '$lib/dataTypes';
-    import RequestFullscreen from '$lib/RequestFullscreen.svelte';
 
-    const enableDebug = false;
-
-    const { pxPerMm, isFullscreen, onComplete} = getContext('task');
+    const { pxPerMm, onComplete, debugMode } = getContext('task');
 
     // Values in mm, designed for a reference 1080p screen
     const radii = [3, 5, 10];
@@ -29,9 +26,9 @@
     let radius = $state(0);
     let innerPercentage = 0.2;
 
-    let debugDistance = $state(0); // DEBUG
-    let debugOriginX = $state(0); // DEBUG
-    let debugOriginY = $state(0); // DEBUG
+    let debugDistance = $state(0);
+    let debugOriginX = $state(0);
+    let debugOriginY = $state(0);
 
     let currentTask = null;
     let currentTrial = null;
@@ -179,9 +176,6 @@
 
     // handles click functionality
     function handleClick(e) {
-        // Don't do anything if we are not in fullscreen
-        if (!isFullscreen) return;
-
         // calculate Euclidian distance from cursor to target
         const dist = Math.sqrt((targetX - e.clientX) ** 2 + (targetY - e.clientY) ** 2);
         
@@ -240,7 +234,7 @@
 
 <ClickTarget {radius} {innerPercentage} x={targetX} y={targetY} />
 
-{#if enableDebug}
+{#if debugMode}
     <DebugOverlay currentX={debugOriginX} currentY={debugOriginY} {screenWidth} {screenHeight} distance={debugDistance} r={radius} /> <!-- DEBUG -->
 {/if}
     
