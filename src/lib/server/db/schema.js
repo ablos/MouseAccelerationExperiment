@@ -3,6 +3,7 @@ import { pgTable, serial, integer, text, timestamp, real, bigint } from 'drizzle
 export const participants = pgTable('participants', {
 	id: serial('id').primaryKey(),
 	code: text('code').notNull().unique(),
+	group: text('group'),
 	age: integer('age')
 });
 

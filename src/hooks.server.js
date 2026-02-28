@@ -1,9 +1,22 @@
 import { db } from '$lib/server/db';
 import { participants } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { DASHBOARD_PASSWORD } from '$env/static/private';
 
 export async function handle({ event, resolve }) 
 {
+    const isDashboard = event.url.pathname.startsWith('/dashboard');
+    
+    if (isDashboard) 
+    {
+        const auth = event.cookies.get('researcherAuth');
+        
+        if ((!auth || auth !== DASHBOARD_PASSWORD) && event.url.pathname !== '/dashboard/login')
+            return Response.redirect(new URL('/dashboard/login', event.url), 303);
+            
+        return resolve(event);
+    }
+
     const participantId = event.cookies.get('participantId');
     
     if (participantId)

@@ -74,5 +74,5 @@
         </div>
     </div>
 
-    <Button onclick={confirm} class="w-full">Confirm &amp; Continue</Button>
+    <Button onclick={confirm} class="w-full cursor-pointer">Confirm &amp; Continue</Button>
 </div>

@@ -27,7 +27,7 @@
             {/if}
         </p>
         
-        <Button class="w-50" onclick={onstart}>
+        <Button class="w-50 cursor-pointer" onclick={onstart}>
             Start Task
         </Button>
     </div>

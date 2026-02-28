@@ -11,5 +11,5 @@
     <Label for="age">Age</Label>
     <Input type="number" id="age" name="age" min="16" max="99" required />
     
-    <Button type="submit" class="w-full mt-4">Continue</Button>
+    <Button type="submit cursor-pointer" class="w-full mt-4">Continue</Button>
 </form>
