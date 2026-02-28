@@ -5,34 +5,24 @@
 	import DraggingTask from "./DraggingTask.svelte";
 	import SliderTask from "./SliderTask.svelte";
 	import RequestFullscreen from "$lib/RequestFullscreen.svelte";
+	import TaskExplanation from "./TaskExplanation.svelte";
+	import { goto } from "$app/navigation";
     
     let { pxPerMm } = $props();
 
     const taskOrder = [TaskType.CLICKING, TaskType.SLIDER, TaskType.DRAGGING]
     let currentTaskIndex = $state(0);
-    // let screenWidth = $state(0);
-    // let screenHeight = $state(0);
     let isFullscreen = $state(false);
     let sessionId = null;
-    let container = $state(null)
+    let container = $state(null);
+    let taskExplained = $state(false);
 
     async function onStart() {
-        // TODO: Remove this in production obviously
-        const participantResult = await fetch('/api/create-participant', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-
-            })
-        });
-        const { participantId } = await participantResult.json();
-
         // Create session in DB
         const sessionResult = await fetch('/api/create-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                participantId,
                 screenResX: window.screen.width,
                 screenResY: window.screen.height,
                 pxPerMm
@@ -46,6 +36,7 @@
     async function onComplete() {
         // Close session on DB
         await fetch(`/api/close-session/${sessionId}`, { method: 'PATCH' });
+        goto('/done');
     }
 
     async function onTaskComplete(task) {
@@ -62,8 +53,11 @@
         // Check if done or go to next
         if (currentTaskIndex >= taskOrder.length - 1)
             onComplete();
-        else
+        else 
+        {
+            taskExplained = false;
             currentTaskIndex++;
+        }
     }
     function enterFullscreen() {
         container.requestFullscreen();
@@ -77,13 +71,15 @@
         get isFullscreen() {return isFullscreen},
         setIsFullscreen: (val) => {isFullscreen = val},
         onComplete: onTaskComplete,
-    })
+    });
 </script>
 
 <!-- wrapper element should be referenced to keep fullscreen mode throughout the application -->
 <div bind:this={container} class="w-screen h-screen bg-white">
     {#if !isFullscreen}
         <RequestFullscreen {enterFullscreen} />
+    {:else if !taskExplained}
+        <TaskExplanation taskType={taskOrder[currentTaskIndex]} onstart={() => taskExplained = true} />
     {:else if taskOrder[currentTaskIndex] === TaskType.CLICKING}
         <ClickTask />
     {:else if taskOrder[currentTaskIndex] === TaskType.SLIDER }

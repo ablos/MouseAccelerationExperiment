@@ -1,19 +1,24 @@
 <script>
     import { onMount } from 'svelte';
     import ClickTask from "$lib/tasks/ClickTask.svelte";
-    import Calibration from "$lib/Calibration.svelte";
 	import SessionManager from '$lib/tasks/SessionManager.svelte';
+	import { goto } from '$app/navigation';
 
     let pxPerMm = $state(null);
 
     onMount(() => {
         const stored = localStorage.getItem('pxPerMm');
-        if (stored) pxPerMm = Number(stored);
+        
+        if (!stored) 
+        {
+            goto('/calibration');
+            return;
+        }
+        
+        pxPerMm = Number(stored);
     });
 </script>
 
-{#if pxPerMm === null}
-    <Calibration oncalibrated={(value) => pxPerMm = value} />
-{:else}
+{#if pxPerMm}
     <SessionManager {pxPerMm} />
 {/if}

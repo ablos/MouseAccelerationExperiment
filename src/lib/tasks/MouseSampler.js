@@ -6,6 +6,7 @@ export function createMouseSampler(onSample, targetFps = 60)
     let mouseY = 0;
     let lastSampleTime = 0;
     let rafId = 0;
+    let startTime = Date.now();
     
     function onMouseMove(e) 
     {
@@ -21,7 +22,7 @@ export function createMouseSampler(onSample, targetFps = 60)
             
             // Only sample if mouse actually moved
             if (mouseX !== 0 || mouseY !== 0)
-                onSample(mouseX, mouseY, timestamp);
+                onSample(mouseX, mouseY, Date.now() - startTime);
         }
         
         rafId = requestAnimationFrame(sample);
@@ -32,6 +33,7 @@ export function createMouseSampler(onSample, targetFps = 60)
         {
             window.addEventListener('mousemove', onMouseMove);
             rafId = requestAnimationFrame(sample);
+            startTime = Date.now();
         },
         stop() 
         {

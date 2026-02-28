@@ -1,10 +1,10 @@
 export class MouseCoordinate
 {
-    constructor(x, y, trialStartTime) 
+    constructor(x, y, timestamp) 
     {
         this.x = x;
         this.y = y;
-        this.timeStamp = Date.now() - trialStartTime;
+        this.timeStamp = timestamp;
     }
 }
 
@@ -63,7 +63,6 @@ export class Session
 {
     constructor(participantId, screenResX, screenResY, pxPerMm) 
     {
-        this.participantId = participantId,
         this.screenResX = screenResX,
         this.screenResY = screenResY,
         this.pxPerMm = pxPerMm

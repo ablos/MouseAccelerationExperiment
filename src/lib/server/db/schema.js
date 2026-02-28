@@ -1,7 +1,9 @@
 import { pgTable, serial, integer, text, timestamp, real, bigint } from 'drizzle-orm/pg-core';
 
 export const participants = pgTable('participants', {
-	id: serial('id').primaryKey()
+	id: serial('id').primaryKey(),
+	code: text('code').notNull().unique(),
+	age: integer('age')
 });
 
 export const sessions = pgTable('sessions', {

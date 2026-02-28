@@ -2,13 +2,13 @@ import { db } from "$lib/server/db";
 import { json } from "@sveltejs/kit";
 import { sessions } from "$lib/server/db/schema.js";
 
-export async function POST({ request }) 
+export async function POST({ request, locals }) 
 {
     const session = await request.json();
     
     const [{ sessionId }] = await db.insert(sessions).values(
         {
-            participantId: session.participantId,
+            participantId: locals.participantId,
             startTime: new Date(Date.now()),
             screenResX: session.screenResX,
             screenResY: session.screenResY,

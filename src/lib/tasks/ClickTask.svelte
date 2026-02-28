@@ -1,5 +1,5 @@
 <script>
-    import { onDestroy, onMount, getContext } from 'svelte';
+    import { onMount, getContext } from 'svelte';
     import ClickTarget from "./ClickTarget.svelte";
     import DebugOverlay from './DebugOverlay.svelte'; // DEBUG
     import { createMouseSampler } from './MouseSampler';
@@ -37,7 +37,7 @@
     let currentTrial = null;
 
     function onMouseSample(x, y, timestamp) {
-        currentTrial.addCoordinate(new MouseCoordinate(x, y, currentTrial.startTime));
+        currentTrial.addCoordinate(new MouseCoordinate(x, y, timestamp));
     }
 
     const sampler = createMouseSampler(onMouseSample);
@@ -159,19 +159,6 @@
 
     }
 
-    // handles fullscreen change
-    function handleFullscreenChange() {
-
-        // center target
-        setTimeout(() => {
-            screenWidth = window.innerWidth;
-            screenHeight = window.innerHeight;
-            targetX = screenWidth / 2;
-            targetY = screenHeight / 2;
-            radius = 13 * pxPerMm;
-        }, 100);
-    }
-
 
     function handleTaskStart(cursorX, cursorY) {
         status = TaskStatus.RUNNING;
@@ -186,9 +173,6 @@
         currentTask.complete();
         sampler.stop();
         status = TaskStatus.DONE;
-        // document.exitFullscreen();
-
-        console.log(currentTask);
 
         onComplete(currentTask)
     }
@@ -232,35 +216,34 @@
 
     // runs on client after page load
     onMount(() => {
-        handleFullscreenChange();
+        // Center the target
+        screenWidth = window.innerWidth;
+        screenHeight = window.innerHeight;
+        targetX = screenWidth / 2;
+        targetY = screenHeight / 2;
+        radius = 13 * pxPerMm;
 
         // Add event listeners
         window.addEventListener('click', handleClick);
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
 
         // Clean up function for event listeners
         return () => {
             window.removeEventListener('click', handleClick);
-            document.removeEventListener('fullscreenchange', handleFullscreenChange)
         }
     });
-    $effect(()=>{
-        console.log("RERENDERED")
-    })
 </script>
 
 
-    {#if status == TaskStatus.IDLE}
-        <h1 class="text-2xl font-bold" style:top="calc(50% - {radius}px - 50px)">Click the target to start the test</h1> 
-    {/if}
+{#if status == TaskStatus.IDLE}
+    <h1 class="text-2xl font-bold" style:top="calc(50% - {radius}px - 50px)">Click the target to start the test</h1> 
+{/if}
 
-    <ClickTarget {radius} {innerPercentage} x={targetX} y={targetY} />
+<ClickTarget {radius} {innerPercentage} x={targetX} y={targetY} />
 
-    {#if enableDebug}
-        <DebugOverlay currentX={debugOriginX} currentY={debugOriginY} {screenWidth} {screenHeight} distance={debugDistance} r={radius} /> <!-- DEBUG -->
-    {/if}
+{#if enableDebug}
+    <DebugOverlay currentX={debugOriginX} currentY={debugOriginY} {screenWidth} {screenHeight} distance={debugDistance} r={radius} /> <!-- DEBUG -->
+{/if}
     
-
 
 <style>
 
