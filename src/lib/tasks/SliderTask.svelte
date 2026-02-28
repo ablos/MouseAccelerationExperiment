@@ -107,38 +107,4 @@
     justify-content: center;
     min-width: min(900px, 95vw);
   }
-
-  .done {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
-  }
-
-  .score {
-    font-size: 5rem;
-    font-weight: 700;
-    font-family: 'Space Mono', monospace;
-    line-height: 1;
-  }
-
-  .btn {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 0.65rem 1.4rem;
-    border-radius: 6px;
-    border: 1.5px solid #2a2a35;
-    background: transparent;
-    color: #f0f0f0;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .btn:hover {
-    border-color: #e8ff5a;
-    color: #e8ff5a;
-  }
 </style>

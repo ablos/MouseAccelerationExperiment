@@ -16,6 +16,7 @@
     let sessionId = null;
     let container = $state(null);
     let taskExplained = $state(false);
+    let wasInterrupted = $state(false);
     
     let debugMode = $state(false);
 
@@ -61,13 +62,31 @@
             currentTaskIndex++;
         }
     }
-    function enterFullscreen() {
-        container.requestFullscreen();
-        isFullscreen = true;
+    
+    function onFullscreenChange() 
+    {
+        isFullscreen = !!document.fullscreenElement;
+        
+        if (!isFullscreen && taskExplained) 
+        {
+            wasInterrupted = true;
+            taskExplained = false;
+        }
+        
+        if (isFullscreen)
+            wasInterrupted = false;
     }
 
     // Runs on client after page load
-    onMount(onStart);
+    onMount(() => 
+    {
+        onStart();
+        
+        // Listen for fullscreen event
+        container.addEventListener('fullscreenchange', onFullscreenChange);
+        return () => container.removeEventListener('fullscreenchange', onFullscreenChange);
+    });
+    
     setContext('task', {
         get pxPerMm() { return pxPerMm },
         get debugMode() { return debugMode },
@@ -78,10 +97,14 @@
 <!-- wrapper element should be referenced to keep fullscreen mode throughout the application -->
 <div bind:this={container} class="w-screen h-screen bg-white">
     {#if !isFullscreen}
-        <div class="flex flex-col items-center justify-center w-screen h-screen">
-            <h1 class="text-2xl font-bold mb-3">Please go into fullcreen by clicking the button below</h1>
+        <div class="flex flex-col items-center justify-center w-screen h-screen gap-4">
+            <h1 class="text-2xl font-bold">Please go into fullcreen by clicking the button below</h1>
             
-            <Button onclick={enterFullscreen}>
+            {#if wasInterrupted}
+                <p class="text-sm text-muted-foreground">You exited fullscreen. The current task will restart from the beginning.</p>
+            {/if}
+            
+            <Button onclick={() => container.requestFullscreen()}>
                 Enable Fullscreen
             </Button>
         </div>

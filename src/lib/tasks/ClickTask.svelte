@@ -143,11 +143,10 @@
         }
 
         // Set new values
-         // Set new values
         radius = r;
-        debugDistance = distance; // DEBUG
-        debugOriginX = targetX;  // DEBUG
-        debugOriginY = targetY;  // DEBUG
+        debugDistance = distance;
+        debugOriginX = targetX;
+        debugOriginY = targetY;
         targetX = targetX + Math.cos(angle) * distance;
         targetY = targetY + Math.sin(angle) * distance;
         currentTrialIndex += 1;
@@ -223,6 +222,7 @@
         // Clean up function for event listeners
         return () => {
             window.removeEventListener('click', handleClick);
+            sampler.stop();
         }
     });
 </script>
