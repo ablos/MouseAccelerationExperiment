@@ -6,6 +6,7 @@
     import { createMouseSampler } from './MouseSampler';
 	import { Task, MouseCoordinate } from '$lib/dataTypes';
 
+    // values based on mm
     const ZONE_WIDTHS = [5, 7, 12];
     const DISTANCES   = [30, 60, 120];
 
@@ -19,18 +20,19 @@
     const { onComplete, pxPerMm, debugMode } = getContext('task');
 
     let currentTask = new Task(TaskType.SLIDER);
+    // This needs to be both on SliderTask and SliderTarget
     let currentTrialRef = null;
 
     trials = buildTrials()
 
     function onMouseSample(x, y, timestamp) {
+        // Record coordinated only when dragging
         if(allowSampling && currentTrialRef){
             currentTrialRef.addCoordinate(new MouseCoordinate(x, y, timestamp));
         }
     }
 
     const sampler = createMouseSampler(onMouseSample);
-
     
     function shuffle(arr) {
         const a = [...arr];
@@ -88,6 +90,7 @@
           disableSampling={() => { allowSampling = false }}
           {nextTrial}
           {currentTask}
+          // This is needed to sync the reference of current trial on both components
           onTrialReady={(trial) => { currentTrialRef = trial }}
         />
       {/key}
