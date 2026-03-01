@@ -8,9 +8,8 @@
         distance    = 250, 
         nextTrial,
         currentTask,
-        onDragStart,
-        onDragEnd,
-        isDragging,
+        enableSampling,
+        disableSampling,
         onTrialReady
     } = $props();
 
@@ -24,6 +23,7 @@
     let zoneLeft    = $state(0);
     let zoneW       = $state(0);
     let zoneCenterX = $state(0);
+    let isDragging = $state(false)
 
     let currentTrial = null;
 
@@ -63,6 +63,7 @@
         const zoneCenterYGlobal = trackRect.top + trackRect.height / 2;
 
         currentTrial = new Trial(handlerXGlobal, handlerYGlobal, zoneCenterXGlobal, zoneCenterYGlobal, zoneWidth);
+        onTrialReady(currentTrial)
         currentTask.addTrial(currentTrial);
     }
 
@@ -79,8 +80,8 @@
 
     function onMouseDown(e) {
         
-        // setIsDragging(true);
-        onDragStart()
+        isDragging = true;
+        enableSampling()
         moveHandle(e.clientX);
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('mouseup', onMouseUp);
@@ -93,7 +94,7 @@
 
     function onMouseUp(e) {
         if (!isDragging) return;
-        onDragEnd()
+        disableSampling()
         isDragging = false;
         currentTrial.complete(e.clientX, e.clientY);
         window.removeEventListener('mousemove', onMouseMove);

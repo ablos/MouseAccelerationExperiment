@@ -4,35 +4,33 @@
     import { TaskStatus } from '$lib/enums';
     import { TaskType } from '$lib/enums';
     import { createMouseSampler } from './MouseSampler';
-	import { Task } from '$lib/dataTypes';
+	import { Task, MouseCoordinate } from '$lib/dataTypes';
 
     const ZONE_WIDTHS = [20, 40, 80];
     const DISTANCES   = [100, 250, 500];
 
     let trials       = $state([]);
     let currentIndex = $state(0);
-    let results      = $state([]);
     let status       = $state(TaskStatus.IDLE);
-    let isDragging = $state(false)
+    let allowSampling = $state(false);
 
     let trial = $derived(trials[currentIndex]);
 
-    const setIsDragging = (draggingState) => {isDragging = draggingState}
-
     const { onComplete, debugMode } = getContext('task');
 
-    let currentTask = null;
+    let currentTask = new Task(TaskType.SLIDER);
+    let currentTrialRef = null;
 
+    trials = buildTrials()
+    
     function onMouseSample(x, y, timestamp) {
-        console.log("x"+x+"y"+y+"t"+timestamp)
-        if(isDragging){
-            currentTrial.addCoordinate(new MouseCoordinate(x, y, timestamp));
+        if(allowSampling && currentTrialRef){
+            currentTrialRef.addCoordinate(new MouseCoordinate(x, y, timestamp));
         }
     }
 
     const sampler = createMouseSampler(onMouseSample);
 
-    let currentTrialRef = null;
     
     function shuffle(arr) {
         const a = [...arr];
@@ -51,7 +49,6 @@
   }
 
   onMount(() => {
-    trials = buildTrials();
     sampler.start()
     // Clean up function for event listeners
     return () => {
@@ -78,32 +75,30 @@
   function startTask(){
     if(status === TaskStatus.IDLE)
         status = TaskStatus.RUNNING
-    currentTask = new Task(TaskType.SLIDER)
   }
 
 </script>
 
 <div class="screen" role="button" tabindex="0" onmousedown={startTask} onkeydown={startTask}>
 
-  {#if status === TaskStatus.RUNNING}
+  <!-- {#if status === TaskStatus.RUNNING} -->
     
     <div class="arena">
       {#key currentIndex}
         <SliderTarget
           zoneWidth={trial.size}
           distance={trial.distance}
-          onDragStart={() => { isDragging = true }}
-          onDragEnd={() => { isDragging = false }}
-          {isDragging}
+          enableSampling={() => { allowSampling = true }}
+          disableSampling={() => { allowSampling = false }}
           {nextTrial}
           {currentTask}
           onTrialReady={(trial) => { currentTrialRef = trial }}
         />
       {/key}
     </div>
-    {:else if status === TaskStatus.IDLE}
-      <div  class="text-2xl font-bold" >Please click anywhere to start the next task</div>
-  {/if}
+    <!-- {:else if status === TaskStatus.IDLE}
+      <div  class="text-2xl font-bold" >Please click anywhere to start the next task</div> -->
+  <!-- {/if} -->
 </div>
 
 <style>

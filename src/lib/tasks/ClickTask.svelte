@@ -34,7 +34,6 @@
     let currentTrial = null;
 
     function onMouseSample(x, y, timestamp) {
-        console.log("x"+x+"y"+"t"+timestamp)
         currentTrial.addCoordinate(new MouseCoordinate(x, y, timestamp));
     }
 
