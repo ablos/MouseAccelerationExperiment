@@ -95,7 +95,7 @@
 </script>
 
 <!-- wrapper element should be referenced to keep fullscreen mode throughout the application -->
-<div bind:this={container} class="w-screen h-screen bg-white">
+<div bind:this={container} class="w-screen h-screen">
     {#if !isFullscreen}
         <div class="flex flex-col items-center justify-center w-screen h-screen gap-4">
             <h1 class="text-2xl font-bold">Please go into fullcreen by clicking the button below</h1>

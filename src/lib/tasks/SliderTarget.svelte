@@ -13,8 +13,13 @@
         onTrialReady
     } = $props();
 
-    const TRACK_WIDTH_BASE = 800;
-    const HANDLE_RADIUS    = 16;
+
+    const { pxPerMm } = getContext('task');
+
+    const TRACK_WIDTH_BASE = 150*pxPerMm;
+    const HANDLE_RADIUS    = 4*pxPerMm;
+
+
 
     let trackWidth  = $state(0);
     // Current position x position of the handler. Y is constant
