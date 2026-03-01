@@ -1,32 +1,32 @@
 <script>
-  import { onMount, getContext } from 'svelte';
-  import SliderTarget from './SliderTarget.svelte';
-	import { TaskStatus } from '$lib/enums';
-  import { TaskType } from '$lib/enums';
+    import { onMount, getContext } from 'svelte';
+    import SliderTarget from './SliderTarget.svelte';
+    import { TaskStatus } from '$lib/enums';
+    import { TaskType } from '$lib/enums';
+    import { createMouseSampler } from './MouseSampler';
+	import { Task } from '$lib/dataTypes';
 
-  const ZONE_WIDTHS = [20, 40, 80];
-  const DISTANCES   = [100, 250, 500];
+    const ZONE_WIDTHS = [20, 40, 80];
+    const DISTANCES   = [100, 250, 500];
 
-  let screenWidth  = $state(1920);
-  let screenHeight = $state(1080);
+    let trials       = $state([]);
+    let currentIndex = $state(0);
+    let results      = $state([]);
+    let status       = $state(TaskStatus.IDLE);
+    let trial = $derived(trials[currentIndex]);
+    const { onComplete } = getContext('task');
 
-  let trials       = $state([]);
-  let currentIndex = $state(0);
-  let results      = $state([]);
-  let status       = $state(TaskStatus.IDLE);
+    let currentTask = null;
+    
 
-  let trial = $derived(trials[currentIndex]);
-
-  const { pxPerMm, onComplete, debugMode } = getContext('task');
-
-  function shuffle(arr) {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
+    function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
     return a;
-  }
+    }
 
   function buildTrials() {
     const combos = ZONE_WIDTHS.flatMap(size =>
@@ -36,49 +36,54 @@
   }
 
   onMount(() => {
-    screenWidth  = window.screen.width;
-    screenHeight = window.screen.height;
     
     trials = buildTrials();
-    status = TaskStatus.RUNNING
   });
 
-  function handleCommit(result) {
-    results = [...results, {
-      trial:        currentIndex + 1,
-      zoneWidth:    trial.size,
-      distance:     trial.distance,
-      ...result,
-    }];
+  function nextTrial() {
+    
 
     // Short delay so user sees the zone highlight before advancing
-    setTimeout(() => {
-      // -15 only for debugging
-      if (currentIndex + 1 >= trials.length - (debugMode ? 15 : 0)) {
-        status = TaskStatus.DONE;
-        onComplete()
-        
-      } else {
+    // setTimeout(() => {
+    // -15 only for debugging
+    if (currentIndex + 1 >= trials.length - (debugMode ? 15 : 0)) {
+        endTask()
+    } else {
         currentIndex++;
-      }
-    }, 200);
+    }
+    // }, 200);
+  }
+
+  function endTask(){
+    currentTask.complete()
+    status = TaskStatus.DONE;
+    console.log(currentTask)
+    onComplete(currentTask)
+  }
+  function startTask(){
+    if(status === TaskStatus.IDLE)
+        status = TaskStatus.RUNNING
+    currentTask = new Task(TaskType.SLIDER)
   }
 
 </script>
 
-<div class="screen">
+<div class="screen" role="button" tabindex="0" onmousedown={startTask} onkeydown={startTask}>
 
-  {#if status == TaskStatus.RUNNING}
+  {#if status === TaskStatus.RUNNING}
     
     <div class="arena">
       {#key currentIndex}
         <SliderTarget
           zoneWidth={trial.size}
           distance={trial.distance}
-          onCommit={handleCommit}
+          {nextTrial}
+          {currentTask}
         />
       {/key}
     </div>
+    {:else if status === TaskStatus.IDLE}
+      <div  class="text-2xl font-bold" >Please click anywhere to start the next task</div>
   {/if}
 </div>
 
@@ -107,4 +112,5 @@
     justify-content: center;
     min-width: min(900px, 95vw);
   }
+
 </style>
