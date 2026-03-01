@@ -13,12 +13,27 @@
     let currentIndex = $state(0);
     let results      = $state([]);
     let status       = $state(TaskStatus.IDLE);
+    let isDragging = $state(false)
+
     let trial = $derived(trials[currentIndex]);
-    const { onComplete } = getContext('task');
+
+    const setIsDragging = (draggingState) => {isDragging = draggingState}
+
+    const { onComplete, debugMode } = getContext('task');
 
     let currentTask = null;
-    
 
+    function onMouseSample(x, y, timestamp) {
+        console.log("x"+x+"y"+y+"t"+timestamp)
+        if(isDragging){
+            currentTrial.addCoordinate(new MouseCoordinate(x, y, timestamp));
+        }
+    }
+
+    const sampler = createMouseSampler(onMouseSample);
+
+    let currentTrialRef = null;
+    
     function shuffle(arr) {
         const a = [...arr];
         for (let i = a.length - 1; i > 0; i--) {
@@ -36,27 +51,27 @@
   }
 
   onMount(() => {
-    
     trials = buildTrials();
+    sampler.start()
+    // Clean up function for event listeners
+    return () => {
+        sampler.stop();
+    } 
   });
 
   function nextTrial() {
     
-
-    // Short delay so user sees the zone highlight before advancing
-    // setTimeout(() => {
-    // -15 only for debugging
     if (currentIndex + 1 >= trials.length - (debugMode ? 15 : 0)) {
         endTask()
     } else {
         currentIndex++;
     }
-    // }, 200);
   }
 
   function endTask(){
     currentTask.complete()
     status = TaskStatus.DONE;
+    sampler.stop();
     console.log(currentTask)
     onComplete(currentTask)
   }
@@ -77,8 +92,12 @@
         <SliderTarget
           zoneWidth={trial.size}
           distance={trial.distance}
+          onDragStart={() => { isDragging = true }}
+          onDragEnd={() => { isDragging = false }}
+          {isDragging}
           {nextTrial}
           {currentTask}
+          onTrialReady={(trial) => { currentTrialRef = trial }}
         />
       {/key}
     </div>

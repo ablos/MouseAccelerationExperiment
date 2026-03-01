@@ -2,13 +2,16 @@
     import { Trial, MouseCoordinate } from '$lib/dataTypes';
     import { untrack, tick } from 'svelte';
     import { getContext } from 'svelte';
-    import { createMouseSampler } from './MouseSampler';
 
     let {
         zoneWidth   = 40,   
         distance    = 250, 
         nextTrial,
-        currentTask
+        currentTask,
+        onDragStart,
+        onDragEnd,
+        isDragging,
+        onTrialReady
     } = $props();
 
     const TRACK_WIDTH_BASE = 800;
@@ -22,72 +25,17 @@
     let zoneW       = $state(0);
     let zoneCenterX = $state(0);
 
-    let isDragging  = $state(false);
-
-    let committed   = $state(false);
-    let hitResult   = $state(false);
-
     let currentTrial = null;
 
     let trackEl = $state(null);
+
     let inZoneNow = $derived(
         isDragging && handleX >= zoneLeft && handleX <= zoneLeft + zoneW
     );
 
-    zoneCenterX = zoneMin + Math.random() * (zoneMax - zoneMin);
-    zoneLeft    = zoneCenterX - halfZone;
-    zoneW       = sZoneWidth;
 
-    const dir = Math.random() < 0.5 ? -1 : 1;
-    let hx = zoneCenterX + dir * sDistance;
-    hx = Math.max(HANDLE_RADIUS, Math.min(trackWidth - HANDLE_RADIUS, hx));
-    handleX = hx;
+    function setup() {
 
-    committed   = false;
-    hitResult   = false;
-    dragStarted = false;
-    startTime   = null;
-  
-
-  $effect(() => {
-    // Track props as triggers only; write state via untrack to avoid cycles
-    zoneWidth; distance; trackEl;
-    untrack(() => { if (trackEl) setup(); });
-  });
-
-  function moveHandle(clientX) {
-    if (!trackEl) return;
-    const rect = trackEl.getBoundingClientRect();
-    handleX = Math.max(HANDLE_RADIUS, Math.min(trackWidth - HANDLE_RADIUS, clientX - rect.left));
-  }
-
-  function commit() {
-    if (committed) return;
-    committed = true;
-
-    const elapsed  = startTime ? (performance.now() - startTime) : 0;
-    const inZone   = handleX >= zoneLeft && handleX <= zoneLeft + zoneW;
-    const error    = Math.abs(handleX - zoneCenterX);
-    const accuracy = inZone ? Math.max(0, 1 - error / (zoneW / 2)) : 0;
-
-    hitResult = inZone;
-
-    onCommit({
-      hit:          inZone,
-      reactionTime: Math.round(elapsed),
-      errorPx:      Math.round(error / scaleX),
-      accuracy:     Math.round(accuracy * 100)
-    });
-  }
-
-  function onMouseDown(e) {
-    if (committed) {
-      return;
-    }
-
-    const sampler = createMouseSampler(onMouseSample);
-
-    async function setup() {
         const sZoneWidth = zoneWidth;
         const sDistance  = distance;
         trackWidth = TRACK_WIDTH_BASE;
@@ -106,12 +54,6 @@
         hx = Math.max(HANDLE_RADIUS, Math.min(trackWidth - HANDLE_RADIUS, hx));
         handleX = hx;
 
-        committed   = false;
-        hitResult   = false;
-
-
-        await tick();
-        
         const trackRect = trackEl.getBoundingClientRect();
     
         const handlerXGlobal = trackRect.left + handleX;
@@ -120,8 +62,6 @@
         const zoneCenterXGlobal = trackRect.left + zoneCenterX;
         const zoneCenterYGlobal = trackRect.top + trackRect.height / 2;
 
-        
-        // console.log(handlerXGlobal, handlerYGlobal, zoneCenterXGlobal, zoneCenterYGlobal, zoneWidth);
         currentTrial = new Trial(handlerXGlobal, handlerYGlobal, zoneCenterXGlobal, zoneCenterYGlobal, zoneWidth);
         currentTask.addTrial(currentTrial);
     }
@@ -137,25 +77,10 @@
         handleX = Math.max(HANDLE_RADIUS, Math.min(trackWidth - HANDLE_RADIUS, clientX - rect.left));
     }
 
-    function commit() {
-        if (committed) return;
-        committed = true;
-
-        const inZone = handleX >= zoneLeft && handleX <= zoneLeft + zoneW;
-
-        hitResult = inZone;
-
-        nextTrial({
-            hit: inZone,
-        });
-    }
-
     function onMouseDown(e) {
-        if (committed) {
-            return;
-        }
-        isDragging = true;
-        sampler.start()
+        
+        // setIsDragging(true);
+        onDragStart()
         moveHandle(e.clientX);
         window.addEventListener('mousemove', onMouseMove);
         window.addEventListener('mouseup', onMouseUp);
@@ -166,14 +91,14 @@
         moveHandle(e.clientX);
     }
 
-    function onMouseUp() {
+    function onMouseUp(e) {
         if (!isDragging) return;
+        onDragEnd()
         isDragging = false;
-        sampler.stop()
         currentTrial.complete(e.clientX, e.clientY);
         window.removeEventListener('mousemove', onMouseMove);
         window.removeEventListener('mouseup', onMouseUp);
-        commit();
+        nextTrial();
     }
 
 </script>
@@ -187,7 +112,7 @@
 
     <div
         class="zone"
-        class:zone-active={inZoneNow || committed}
+        class:zone-active={inZoneNow}
         style="left: {zoneLeft}px; width: {zoneW}px"
     >
         <div class="zone-center"></div>
