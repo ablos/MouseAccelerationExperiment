@@ -5,6 +5,7 @@
     import Textarea from "$lib/components/ui/textarea/textarea.svelte";
     import { Mars, Venus, Asterisk, X } from 'lucide-svelte';
     import * as Dialog from '$lib/components/ui/dialog';
+    import * as Tooltip from '$lib/components/ui/tooltip';
     
     let { data, form } = $props();
     
@@ -42,11 +43,18 @@
     }
 </script>
 
-{#snippet stat(label, value)}
-    <div class="flex flex-col items-center">
-        <span class="text-xs text-zinc-400">{label}</span>
-        <span class="text-sm">{value}</span>
-    </div>
+{#snippet stat(label, value, tooltip)}
+    <Tooltip.Root>
+        <Tooltip.Trigger>
+            <div class="flex flex-col items-center cursor-default">
+                <span class="text-xs text-zinc-400">{label}</span>
+                <span class="text-sm">{value}</span>
+            </div>
+        </Tooltip.Trigger>
+        <Tooltip.Content class="bg-zinc-800 text-zinc-200 border border-zinc-700" arrowClasses="bg-zinc-800">
+            <p>{tooltip}</p>
+        </Tooltip.Content>
+    </Tooltip.Root>
 {/snippet}
 
 {#snippet row(participant, sessionCount)}
@@ -106,11 +114,13 @@
         <h1 class="text-2xl">Participants</h1>
         
         <!-- Stats -->
-        {@render stat('Enrolled', `${withSession} / ${totalParticipants}`)}
-        {@render stat('Groups', `${controlCount}c / ${experimentalCount}e / ${unassignedCount}u`)}
-        {@render stat('Avg. Age', `${avgAge}`)}
-        {@render stat('Handedness', `${rightCount}r / ${leftCount}l`)}
-        {@render stat('Gender', `${maleCount}m / ${femaleCount}f / ${otherCount}o`)}
+        <Tooltip.Provider>
+            {@render stat('Enrolled', `${withSession} / ${totalParticipants}`, '>1 session / Total invited')}
+            {@render stat('Groups', `${controlCount}c / ${experimentalCount}e / ${unassignedCount}u`, 'Control / Experimental / Unassigned')}
+            {@render stat('Avg. Age', `${avgAge}`, 'Average age of participants')}
+            {@render stat('Handedness', `${rightCount}r / ${leftCount}l`, 'Right-handed / Left-handed')}
+            {@render stat('Gender', `${maleCount}m / ${femaleCount}f / ${otherCount}o`, 'Male / Female / Other')}
+        </Tooltip.Provider>
         
         <!-- New Participant Dialog -->
         <Dialog.Root>
