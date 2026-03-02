@@ -35,23 +35,23 @@
     }
 </script>
 
-<div class="flex flex-col items-center gap-6 w-full max-w-2xl">
+<div class="flex flex-col items-center gap-4 w-full max-w-2xl">
     <div class="max-w-lg text-center">
         <h1 class="text-2xl font-bold">Screen Calibration</h1>
-        <p class="text-muted-foreground mt-2">
+        <p class="text-muted-foreground mt-1 text-sm">
             In order to make sure the tasks are identical for everyone we need to do a screen calibration to find your
             screen's pixel density. This is a one-time setup for this computer.
         </p>
     </div>
 
-    <div class="w-full rounded-lg border bg-card p-6 flex flex-col gap-4">
+    <div class="w-full rounded-lg border bg-card p-4 flex flex-col gap-3">
         <p class="text-sm max-w-lg text-center mx-auto">
             Hold a credit card (or any bank card) up to your screen. Drag the right
             edge of the rectangle below until it matches the width of your card.
         </p>
 
         <div
-            class="w-full relative"
+            class="w-full max-w-[min(45vw,450px)] mx-auto relative"
             style:height="{containerWidth / CARD_ASPECT}px"
             bind:clientWidth={containerWidth}
         >
