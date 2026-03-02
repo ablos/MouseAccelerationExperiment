@@ -30,9 +30,9 @@
     let rightCount = $derived(data.participants.filter(p => p.handedness === 'right').length);
     let leftCount = $derived(data.participants.filter(p => p.handedness === 'left').length);
     
-    let maleCount = $derived(data.participants.filter(p => p.gender === 'male').length);
-    let femaleCount = $derived(data.participants.filter(p => p.gender === 'female').length);
-    let otherCount = $derived(data.participants.filter(p => p.gender && p.gender !== 'male' && p.gender !== 'female').length);
+    let maleCount = $derived(data.participants.filter(p => p.sex === 'male').length);
+    let femaleCount = $derived(data.participants.filter(p => p.sex === 'female').length);
+    let otherCount = $derived(data.participants.filter(p => p.sex && p.sex !== 'male' && p.sex !== 'female').length);
     
     function getStatus(participant, sessionCount) 
     {
@@ -90,12 +90,12 @@
             {participant.handedness === 'right' ? 'R' : participant.handedness === 'left' ? 'L' : '-'}
         </span>
         
-        <!-- Gender -->
-        {#if participant.gender === 'male'}
+        <!-- Sex -->
+        {#if participant.sex === 'male'}
             <Mars size={16} class='text-sky-300' />
-        {:else if participant.gender === 'female'}
+        {:else if participant.sex === 'female'}
             <Venus size={16} class='text-rose-300' />
-        {:else if participant.gender}
+        {:else if participant.sex}
             <Asterisk size={16} class='text-purple-300' />
         {:else}
             <span>-</span>
@@ -119,7 +119,7 @@
             {@render stat('Groups', `${controlCount}c / ${experimentalCount}e / ${unassignedCount}u`, 'Control / Experimental / Unassigned')}
             {@render stat('Avg. Age', `${avgAge}`, 'Average age of participants')}
             {@render stat('Handedness', `${rightCount}r / ${leftCount}l`, 'Right-handed / Left-handed')}
-            {@render stat('Gender', `${maleCount}m / ${femaleCount}f / ${otherCount}o`, 'Male / Female / Other')}
+            {@render stat('Sex', `${maleCount}m / ${femaleCount}f / ${otherCount}o`, 'Male / Female / Other')}
         </Tooltip.Provider>
         
         <!-- New Participant Dialog -->
@@ -198,7 +198,7 @@
             <span>Session #</span>
             <span>Age</span>
             <span>Handedness</span>
-            <span>Gender</span>
+            <span>Sex</span>
         </div>
         
         <div class="mx-4 mb-3 h-0.75 bg-zinc-700 rounded-full"></div>

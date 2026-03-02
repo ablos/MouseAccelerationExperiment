@@ -5,7 +5,7 @@ export const participants = pgTable('participants', {
 	code: text('code').notNull().unique(),
 	group: text('group'),
 	age: integer('age'),
-	gender: text('gender'),
+	sex: text('sex'),
 	handedness: text('handedness'),
 	hoursPerWeek: integer('hours_per_week'),
 	gamingExperience: text('gaming_experience')
