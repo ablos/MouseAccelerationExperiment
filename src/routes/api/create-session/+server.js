@@ -14,7 +14,11 @@ export async function POST({ request, locals })
             screenResY: session.screenResY,
             screenPxPerMm: session.pxPerMm,
             devicePixelRatio: session.devicePixelRatio,
-            userAgent: session.userAgent
+            userAgent: session.userAgent,
+            samePC: session.samePC,
+            sameSetting: session.sameSetting,
+            sameMouse: session.sameMouse,
+            hoursSinceLastSession: session.hoursSinceLastSession
         }).returning({ sessionId: sessions.id });
         
     return json({ ok: true, sessionId });

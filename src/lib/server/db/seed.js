@@ -39,6 +39,7 @@ function makeSession(participantId, offsetDays) {
         screenPxPerMm: 4.47,
         devicePixelRatio: 1.0,
         userAgent: 'Mozilla/5.0 (seed data)',
+        hoursSinceLastSession: 10
     };
 }
 

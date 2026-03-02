@@ -4,6 +4,7 @@
 	import SessionManager from '$lib/tasks/SessionManager.svelte';
 	import { goto } from '$app/navigation';
 
+    let { data } = $props();
     let pxPerMm = $state(null);
 
     onMount(() => {
@@ -20,5 +21,5 @@
 </script>
 
 {#if pxPerMm}
-    <SessionManager {pxPerMm} />
+    <SessionManager {pxPerMm} isFirstSession={data.isFirstSession} />
 {/if}
