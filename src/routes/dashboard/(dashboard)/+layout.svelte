@@ -1,7 +1,7 @@
 <script>
     import Button from "$lib/components/ui/button/button.svelte";
     import { page } from '$app/stores';
-    import { LayoutDashboard, Users } from 'lucide-svelte';
+    import { LayoutDashboard, Users, CalendarRange } from 'lucide-svelte';
     
     let { children } = $props();
 </script>
@@ -31,6 +31,7 @@
         <!-- Nav buttons -->
         {@render navItem('/dashboard', LayoutDashboard, 'Overview')}
         {@render navItem('/dashboard/participants', Users, 'Participants')}
+        {@render navItem('/dashboard/schedule', CalendarRange, 'Schedule')}
         
         <!-- Logout button -->
         <form method="POST" action="/dashboard?/logout" class="mt-auto">
