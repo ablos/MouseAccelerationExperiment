@@ -29,7 +29,7 @@
                 screenResX: window.screen.width,
                 screenResY: window.screen.height,
                 pxPerMm,
-                devicePixelRatio: window.devicePixelRatio
+                osScaleFactor: window.devicePixelRatio
             })
         });
 
@@ -78,12 +78,8 @@
             wasInterrupted = false;
     }
 
-    // Runs on client after page load
-    onMount(() => 
+    onMount(() =>
     {
-        onStart();
-        
-        // Listen for fullscreen event
         container.addEventListener('fullscreenchange', onFullscreenChange);
         return () => container.removeEventListener('fullscreenchange', onFullscreenChange);
     });
@@ -110,7 +106,7 @@
             </Button>
         </div>
     {:else if !taskExplained}
-        <TaskExplanation taskType={taskOrder[currentTaskIndex]} onstart={() => taskExplained = true} />
+        <TaskExplanation taskType={taskOrder[currentTaskIndex]} onstart={async () => { if (!sessionId) await onStart(); taskExplained = true; }} />
     {:else if taskOrder[currentTaskIndex] === TaskType.CLICKING}
         <ClickTask />
     {:else if taskOrder[currentTaskIndex] === TaskType.SLIDER }
