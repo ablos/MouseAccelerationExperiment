@@ -29,7 +29,8 @@ export const sessions = pgTable('sessions', {
 	endTime: timestamp('end_time'),
 	screenResX: integer('screen_res_x').notNull(),
 	screenResY: integer('screen_res_y').notNull(),
-	screenPxPerMm: real('screen_px_per_mm').notNull()
+	screenPxPerMm: real('screen_px_per_mm').notNull(),
+	devicePixelRatio: real('device_pixel_ratio').notNull()
 });
 
 export const tasks = pgTable('tasks', {

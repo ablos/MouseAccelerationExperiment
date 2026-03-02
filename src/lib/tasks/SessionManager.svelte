@@ -28,7 +28,8 @@
             body: JSON.stringify({
                 screenResX: window.screen.width,
                 screenResY: window.screen.height,
-                pxPerMm
+                pxPerMm,
+                devicePixelRatio: window.devicePixelRatio
             })
         });
 
