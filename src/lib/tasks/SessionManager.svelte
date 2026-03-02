@@ -29,7 +29,8 @@
                 screenResX: window.screen.width,
                 screenResY: window.screen.height,
                 pxPerMm,
-                osScaleFactor: window.devicePixelRatio
+                devicePixelRatio: window.devicePixelRatio,
+                userAgent: navigator.userAgent
             })
         });
 
