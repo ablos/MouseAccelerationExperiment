@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp, real, bigint } from 'drizzle-orm/pg-core';
+import { pgTable, serial, integer, text, timestamp, real, bigint, boolean, date, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const participants = pgTable('participants', {
 	id: serial('id').primaryKey(),
@@ -32,8 +32,11 @@ export const sessions = pgTable('sessions', {
 	screenPxPerMm: real('screen_px_per_mm').notNull(),
 	devicePixelRatio: real('device_pixel_ratio').notNull(),
 	userAgent: text('user_agent').notNull(),
-	hoursSinceLastSession: real('hours_since_last_session').notNull()
-});
+	hoursSinceLastSession: real('hours_since_last_session').notNull(),
+	slot: integer('slot')
+}, (t) => [
+	uniqueIndex('sessions_participant_slot_unique').on(t.participantId, t.slot)
+]);
 
 export const tasks = pgTable('tasks', {
 	id: serial('id').primaryKey(),
@@ -70,4 +73,12 @@ export const mouseCoordinates = pgTable('mouse_coordinates', {
 	timestamp: bigint('timestamp', { mode: 'number' }).notNull(),
 	x: real('x').notNull(),
 	y: real('y').notNull()
+});
+
+export const studyConfig = pgTable('study_config', {
+	id: serial('id').primaryKey(),
+	startDate: date('start_date'),
+	endDate: date('end_date'),
+	dayInterval: integer('day_interval'),
+	gracePeriod: integer('grace_period')
 });

@@ -1,6 +1,71 @@
 <script>
     import Button from "$lib/components/ui/button/button.svelte";
+    import * as Dialog from "$lib/components/ui/dialog";
+    import { page } from '$app/stores';
+    import { replaceState } from "$app/navigation";
+    
+    let dialogOpen = $state(!!$page.data.reason);
+    
+    function closeDialog() 
+    {
+        dialogOpen = false;
+        replaceState('/', {});
+    }
+    
+    function formatDate(isoString) 
+    {
+        if (!isoString) return "Unknown";
+    
+        const [year, month, day] = isoString.split('-').map(Number);
+        
+        return new Intl.DateTimeFormat('en-US', 
+        {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric'
+        }).format(new Date(year, month - 1, day));
+    }
 </script>
+
+<Dialog.Root bind:open={dialogOpen}>
+    <Dialog.Content>
+        <Dialog.Header>
+            <Dialog.Title>
+                {#if $page.data.reason === "no-slot"}
+                    No session today
+                {:else if $page.data.reason === "slot-done"}
+                    Session already completed
+                {:else if $page.data.reason === "study-ended"}
+                    Study complete
+                {:else if $page.data.reason === "study-not-started"}
+                    Study not started
+                {:else}
+                    Unknown
+                {/if}
+            </Dialog.Title>
+        </Dialog.Header>
+        
+        {#if $page.data.reason === "no-slot"}
+            <p>Your next session is scheduled for:</p>
+            <p class="text-2xl font-semibold text-center">{formatDate($page.data.next)}</p>
+        {:else if $page.data.reason === "slot-done"}
+            <p>You've already completed today's session. Your next session is on:</p>
+            <p class="text-2xl font-semibold text-center">{formatDate($page.data.next)}</p>
+        {:else if $page.data.reason === "study-ended"}
+            <p>You've completed all your sessions. Thanks for participating!</p>
+        {:else if $page.data.reason === "study-not-started"}
+            <p>The study has not started yet. Please come back later.</p>
+        {:else}
+            Unknown
+        {/if}
+        
+        <Dialog.Footer>
+            <Button class="mx-auto" onclick={closeDialog}>
+                Got it
+            </Button>
+        </Dialog.Footer>
+    </Dialog.Content>
+</Dialog.Root>
 
 <form method="POST" action="?/logout">
     <Button type="submit" class="absolute top-2 right-2 cursor-pointer">

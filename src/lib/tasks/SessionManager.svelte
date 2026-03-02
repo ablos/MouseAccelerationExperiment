@@ -12,7 +12,7 @@
 	import Label from "$lib/components/ui/label/label.svelte";
 	import Slider from "$lib/components/ui/slider/slider.svelte";
     
-    let { pxPerMm, isFirstSession } = $props();
+    let { pxPerMm, isFirstSession, slot } = $props();
     
     let didCheck = $state(false);
     let samePC = $state(false);
@@ -41,7 +41,8 @@
                 pxPerMm,
                 devicePixelRatio: window.devicePixelRatio,
                 userAgent: navigator.userAgent,
-                hoursSinceLastSession
+                hoursSinceLastSession,
+                slot
             })
         });
 

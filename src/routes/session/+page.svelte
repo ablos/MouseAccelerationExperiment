@@ -21,5 +21,5 @@
 </script>
 
 {#if pxPerMm}
-    <SessionManager {pxPerMm} isFirstSession={data.isFirstSession} />
+    <SessionManager {pxPerMm} isFirstSession={data.isFirstSession} slot={data.slot} />
 {/if}

@@ -61,11 +61,12 @@ export class Task
 
 export class Session 
 {
-    constructor(participantId, screenResX, screenResY, pxPerMm, hoursSinceLastSession) 
+    constructor(participantId, screenResX, screenResY, pxPerMm, hoursSinceLastSession, slot) 
     {
         this.screenResX = screenResX,
         this.screenResY = screenResY,
         this.pxPerMm = pxPerMm,
-        this.hoursSinceLastSession = hoursSinceLastSession
+        this.hoursSinceLastSession = hoursSinceLastSession,
+        this.slot = slot
     }
 }

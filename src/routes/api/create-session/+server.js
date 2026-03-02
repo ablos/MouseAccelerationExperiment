@@ -18,7 +18,8 @@ export async function POST({ request, locals })
             samePC: session.samePC,
             sameSetting: session.sameSetting,
             sameMouse: session.sameMouse,
-            hoursSinceLastSession: session.hoursSinceLastSession
+            hoursSinceLastSession: session.hoursSinceLastSession,
+            slot: session.slot
         }).returning({ sessionId: sessions.id });
         
     return json({ ok: true, sessionId });
