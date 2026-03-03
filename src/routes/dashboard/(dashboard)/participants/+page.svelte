@@ -6,13 +6,15 @@
     import { Mars, Venus, Asterisk, X } from 'lucide-svelte';
     import * as Dialog from '$lib/components/ui/dialog';
     import * as Tooltip from '$lib/components/ui/tooltip';
-    
+    import { generateSlots } from '$lib/utils/studySchedule.js';
+    import { getParticipantStatus } from '$lib/utils/participants.js';
+
     let { data, form } = $props();
     
     let messageDismissed = $state(false);
-    
-    
-    
+
+    let totalSlots = $derived(generateSlots(data.config).length || 0);
+
     let totalParticipants = $derived(data.participants.length);
     let withSession = $derived(new Set(data.sessions.map(s => s.participantId)).size);
     
@@ -34,13 +36,6 @@
     let femaleCount = $derived(data.participants.filter(p => p.sex === 'female').length);
     let otherCount = $derived(data.participants.filter(p => p.sex && p.sex !== 'male' && p.sex !== 'female').length);
     
-    function getStatus(participant, sessionCount) 
-    {
-        if (sessionCount === 0) return 'Invited';
-        if (sessionCount >= 7) return 'Complete';
-        if (!participant.group) return 'Needs Assignment';
-        return 'Active';
-    }
 </script>
 
 {#snippet stat(label, value, tooltip)}
@@ -58,7 +53,7 @@
 {/snippet}
 
 {#snippet row(participant, sessionCount)}
-    {@const status = getStatus(participant, sessionCount)}
+    {@const status = getParticipantStatus(participant, sessionCount, totalSlots)}
     
     <div class="grid grid-cols-[1fr_1.5fr_1.5fr_0.75fr_0.75fr_0.75fr_0.75fr_1fr] mx-4 py-3 items-center justify-items-center text-zinc-200 border-b border-zinc-700 last:border-0">
         <!-- Code -->
@@ -80,7 +75,7 @@
         }">{participant.group ?? 'Unassigned'}</span>
         
         <!-- Session count -->
-        <span>{sessionCount}<span class="text-zinc-600">&nbsp;/ 7</span></span>
+        <span>{sessionCount}<span class="text-zinc-600">&nbsp;/ {totalSlots}</span></span>
         
         <!-- Age -->
         <span>{participant.age ?? '-'}</span>

@@ -43,6 +43,7 @@
 		"drizzle-orm": "^0.45.1",
 		"lucide-svelte": "^0.575.0",
 		"postgres": "^3.4.8",
-		"resend": "^6.9.3"
+		"resend": "^6.9.3",
+		"ua-parser-js": "^2.0.9"
 	}
 }

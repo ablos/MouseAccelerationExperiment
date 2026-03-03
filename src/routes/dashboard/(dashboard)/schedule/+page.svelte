@@ -3,6 +3,7 @@
     import Button from "$lib/components/ui/button/button.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
     import Label from "$lib/components/ui/label/label.svelte";
+    import { addDays, generateSlots, formatDate } from '$lib/utils/studySchedule.js';
 
     let { data, form } = $props();
     
@@ -24,50 +25,6 @@
         return 'ended';
     });
     
-    function addDays(isoString, days) 
-    {
-        const [year, month, day] = isoString.split('-').map(Number);
-        const d = new Date(year, month - 1, day);
-        d.setDate(d.getDate() + days);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    }
-    
-    function generateSlots() 
-    {
-        let slots = [];
-        
-        let currentDate = startDate;
-        let slotIndex = 1;
-        
-        while (currentDate <= endDate) 
-        {
-            let end = addDays(currentDate, gracePeriod);
-            
-            if (end > endDate)
-                end = endDate;
-            
-            slots.push({ slotIndex, start: currentDate, end });
-            
-            currentDate = addDays(currentDate, dayInterval);
-            slotIndex++;
-        }
-        
-        return slots;
-    }
-    
-    function formatDate(isoString) 
-    {
-        if (!isoString) return "Unknown";
-    
-        const [year, month, day] = isoString.split('-').map(Number);
-        
-        return new Intl.DateTimeFormat('en-US', 
-        {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric'
-        }).format(new Date(year, month - 1, day));
-    }
 </script>
 
 <div class="flex flex-col w-full gap-3">
@@ -134,7 +91,7 @@
             <h2 class="text-sm text-zinc-400 uppercase tracking-wider">Preview</h2>
             
             {#if startDate && endDate && dayInterval && gracePeriod !== null}
-                {#each generateSlots() as slot}
+                {#each generateSlots({ startDate, endDate, dayInterval, gracePeriod }) as slot}
                     {@const isToday = today >= slot.start && today <= slot.end}
                     <div class="grid grid-cols-[2rem_1fr_auto_1fr] items-center gap-3 py-2 px-3 rounded 
                     {isToday ? 'bg-green-900/20 border border-green-800/50' : ''}">

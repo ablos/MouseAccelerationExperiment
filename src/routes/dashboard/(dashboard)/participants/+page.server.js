@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { participants, participantContacts, sessions } from '$lib/server/db/schema';
+import { participants, participantContacts, sessions, studyConfig } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import { Resend } from 'resend';
@@ -12,8 +12,9 @@ export async function load()
 {
     const allParticipants = await db.select().from(participants);
     const allSessions = await db.select({ participantId: sessions.participantId }).from(sessions);
+    const [config] = await db.select().from(studyConfig);
     
-    return { participants: allParticipants, sessions: allSessions };
+    return { participants: allParticipants, sessions: allSessions, config };
 }
 
 export const actions = {
