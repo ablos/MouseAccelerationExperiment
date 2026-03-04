@@ -32,7 +32,7 @@
         `position:absolute; left:${fileX}px; top:${fileY}px; cursor:${isDragging ? 'grabbing' : 'grab'}; opacity:${isDragging ? 0.7 : 1}; transform: translate(-50%, -50%);`
     );
     let targetStyle = $derived(
-        `position:absolute; left:${targetX}px; top:${targetY}px; transform: translate(-50%, -50%); border: 1px dashed gray; border-radius: 8px;`
+        `position:absolute; left:${targetX}px; top:${targetY}px; transform: translate(-50%, -50%);`
     );
     let isOverTarget = $derived(
         isDragging && Math.sqrt((targetX - fileX) ** 2 + (targetY - fileY) ** 2) <= folderSize 
