@@ -10,10 +10,10 @@
 
     // in mm like ClickTask
     const targetSizes = [9, 15, 30];
-    const distances = [30, 60, 120];
+    const distances = [40, 75, 140];
 
     let trials = targetSizes.flatMap(target => distances.map(distance => ({target, distance})))
-    trials = trials.sort(() => Math.random() - 0.5)
+    trials = [...trials, ...trials].sort(() => Math.random() - 0.5)
     // states initialization
     let status = $state(TaskStatus.IDLE);
     let currentTrialIndex = $state(0)
@@ -32,7 +32,7 @@
         `position:absolute; left:${fileX}px; top:${fileY}px; cursor:${isDragging ? 'grabbing' : 'grab'}; opacity:${isDragging ? 0.7 : 1}; transform: translate(-50%, -50%);`
     );
     let targetStyle = $derived(
-        `position:absolute; left:${targetX}px; top:${targetY}px; transform: translate(-50%, -50%);`
+        `position:absolute; left:${targetX}px; top:${targetY}px; transform: translate(-50%, -50%); border: 1px dashed gray; border-radius: 8px;`
     );
     let isOverTarget = $derived(
         isDragging && Math.sqrt((targetX - fileX) ** 2 + (targetY - fileY) ** 2) <= folderSize 
@@ -160,7 +160,7 @@
     <div style={targetStyle}>
         <Folder 
             size={folderSize} 
-            color="blue"
+            color="gray"
             style="transition: color 0.15s, filter 0.15s; filter: {isOverTarget ? 'drop-shadow(0 0 12px #22c55e)' : 'none'};"
          />
     </div>
@@ -173,7 +173,7 @@
         tabindex="0"
         onkeydown={onMouseDown}
     >
-        <File size={folderSize} color="gray" />
+        <File size={folderSize} color="blue" />
     </div>
 </div>
 

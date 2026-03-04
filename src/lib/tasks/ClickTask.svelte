@@ -14,7 +14,7 @@
 
     // Create and shuffle trial combinations
     let trials = radii.flatMap(r => distances.map(distance => ({ r, distance })));
-    trials = trials.sort(() => Math.random() - 0.5);
+    trials = [...trials, ...trials].sort(() => Math.random() - 0.5);
 
     // set state variables
     let currentTrialIndex = $state(0);

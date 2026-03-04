@@ -7,7 +7,7 @@
 	import { Task, MouseCoordinate } from '$lib/dataTypes';
 
     // values based on mm
-    const ZONE_WIDTHS = [5, 7, 12];
+    const ZONE_WIDTHS = [25, 20, 16];
     const DISTANCES   = [30, 60, 120];
 
     let trials       = $state([]);
@@ -113,13 +113,14 @@
 
 
   .arena {
-    border: 1px solid #2a2a35;
+    border: 1px solid #c4c4c4;
     border-radius: 12px;
     padding: 4rem 3rem;
     display: flex;
     align-items: center;
     justify-content: center;
     min-width: min(900px, 95vw);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
   }
 
 </style>

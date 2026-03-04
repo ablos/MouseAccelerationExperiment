@@ -17,7 +17,7 @@
     const { pxPerMm } = getContext('task');
 
     const TRACK_WIDTH_BASE = 150*pxPerMm;
-    const HANDLE_RADIUS    = 4*pxPerMm;
+    const HANDLE_RADIUS    = 5*pxPerMm;
 
 
 
@@ -37,6 +37,7 @@
     let inZoneNow = $derived(
         isDragging && handleX >= zoneLeft && handleX <= zoneLeft + zoneW
     );
+
 
 
     function setup() {
@@ -118,10 +119,14 @@
 
     <div
         class="zone"
-        class:zone-active={inZoneNow}
+        
         style="left: {zoneLeft}px; width: {zoneW}px"
     >
-        <div class="zone-center"></div>
+        <div class="zone-target-line" class:zone-active={inZoneNow}>
+            <div class="zone-target-accuracy-line" style="width:{HANDLE_RADIUS}px"></div>
+        </div>
+
+       
     </div>
 
     <div
@@ -149,9 +154,9 @@
         position: absolute;
         top: 50%;
         left: 0; right: 0;
-        height: 4px;
+        height: 5px;
         transform: translateY(-50%);
-        background: #2a2a35;
+        background: #a3a3a3;
         border-radius: 99px;
     }
 
@@ -159,27 +164,34 @@
         position: absolute;
         top: 50%;
         transform: translateY(-50%);
-        height: 56px;
-        background: rgba(212, 85, 57, 0.6);
-        border: 1.5px solid rgba(36, 36, 36, 0.35);
-        border-radius: 6px;
+        height: 1rem;
+        /* background: rgba(212, 85, 57, 0.6); */
+        border-left: 3px solid blue;
+        border-right: 3px solid blue;
+        /* border-radius: 6px; */
         pointer-events: none;
         transition: background 0.15s, border-color 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
-    .zone.zone-active {
-        background: rgba(207, 53, 14, 0.25);
-        border-color: #ec382f;
-    }
-
-    .zone-center {
-        position: absolute;
-        top: 0; bottom: 0;
-        left: 50%;
-        width: 2px;
-        transform: translateX(-50%);
-        background: #292929;
+    .zone-target-line {
+        width: 100%;
+        height: 5px;
+        background: blue;
         opacity: 0.7;
+        display: flex;
+        justify-content: center;
+        transition: box-shadow 0.15s, border-color 0.15s;
+    }
+
+    .zone-target-line.zone-active{
+        box-shadow: 0 2px 16px rgb(39, 26, 152);
+    }
+    .zone-target-accuracy-line {
+        height: 5px;
+        background: red;
     }
 
     .handle {
@@ -195,5 +207,6 @@
 
     .handle.dragging {
         box-shadow: 0 0 0 3px #0d0d10, 0 0 0 5px #e8ff5a, 0 0 20px rgba(232,255,90,0.35);
+        opacity: 80%;
     }
 </style>

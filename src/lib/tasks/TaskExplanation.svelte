@@ -17,13 +17,13 @@
             {/if}
         </h1>
         
-        <p>
+        <p class="text-center">
             {#if taskType === TaskType.CLICKING}
-                This is the clicking task, very nice explanation.
+                In this task you have to click the target as fast and as accurately as possible. Clicks outside the target still count and are allowed.
             {:else if taskType === TaskType.SLIDER}
-                This is the sliding task, very nice explanation.
+                In this task you have to drag the handle towards the target as fast and as accurately as possible. Dragging outside the target is allowed. Note that your performance is measured only while dragging. The time needed to click the handle is indifferent.
             {:else}
-                This is the dragging task, very nice explanation.
+               In this task you have to drag and drop the file icon into the folder as fast and accurately as possible. The file is a blue icon and the folder a grey one.  Note that your performance is measured only while dragging. The time needed to click the file is indifferent.
             {/if}
         </p>
         
