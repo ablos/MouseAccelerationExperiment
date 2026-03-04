@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { DASHBOARD_PASSWORD } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 export const actions = 
 {
@@ -8,7 +8,7 @@ export const actions =
         const data = await request.formData();
         const password = data.get('password');
         
-        if (password !== DASHBOARD_PASSWORD)
+        if (password !== env.DASHBOARD_PASSWORD)
             return fail(400, { error: 'Wrong password' });
             
         cookies.set('researcherAuth', password, 

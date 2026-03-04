@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db';
 import { participants } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
-import { DASHBOARD_PASSWORD } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 export async function handle({ event, resolve }) 
 {
@@ -11,7 +11,7 @@ export async function handle({ event, resolve })
     {
         const auth = event.cookies.get('researcherAuth');
         
-        if ((!auth || auth !== DASHBOARD_PASSWORD) && event.url.pathname !== '/dashboard/login')
+        if ((!auth || auth !== env.DASHBOARD_PASSWORD) && event.url.pathname !== '/dashboard/login')
             return Response.redirect(new URL('/dashboard/login', event.url), 303);
             
         return resolve(event);

@@ -3,10 +3,8 @@ import { participants, participantContacts, sessions, studyConfig } from '$lib/s
 import { eq } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import { Resend } from 'resend';
-import { RESEND_API_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { invitationEmail } from '$lib/server/emails/invitation.js';
-
-const resend = new Resend(RESEND_API_KEY);
 
 export async function load() 
 {
@@ -69,6 +67,7 @@ export const actions = {
             });
         }
         
+        const resend = new Resend(env.RESEND_API_KEY);
         await resend.emails.send(
         {
             from: 'Mouse Acceleration Study <mouse-study@ablos.nl>',
