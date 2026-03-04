@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package*.json .
 RUN npm ci
 COPY . .
-RUN npm run prepare && npm run build
+RUN DATABASE_URL=postgres://dummy:dummy@localhost/dummy npm run prepare && DATABASE_URL=postgres://dummy:dummy@localhost/dummy npm run build
 
 FROM node:22-alpine
 RUN apk upgrade --no-cache
