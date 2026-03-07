@@ -3,7 +3,7 @@
     import Button from "$lib/components/ui/button/button.svelte";
     import Input from "$lib/components/ui/input/input.svelte";
     import Label from "$lib/components/ui/label/label.svelte";
-    import { addDays, generateSlots, formatDate } from '$lib/utils/studySchedule.js';
+    import { generateSlots, formatDate } from '$lib/utils/studySchedule.js';
 
     let { data, form } = $props();
     
@@ -11,8 +11,6 @@
     
     let startDate = $state(untrack(() => data.config?.startDate ?? undefined));
     let endDate = $state(untrack(() => data.config?.endDate ?? undefined));
-    let dayInterval = $state(untrack(() => data.config?.dayInterval ?? 2));
-    let gracePeriod = $state(untrack(() => data.config?.gracePeriod ?? 1));
     
     const today = new Date().toISOString().slice(0, 10);
     
@@ -63,18 +61,6 @@
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="flex flex-col gap-1.5">
-                        <Label>Day interval</Label>
-                        <Input type="number" name="dayInterval" min="1" bind:value={dayInterval} />
-                    </div>
-                    
-                    <div class="flex flex-col gap-1.5">
-                        <Label>Grace period</Label>
-                        <Input type="number" name="gracePeriod" min="0" bind:value={gracePeriod} />
-                    </div>
-                </div>
-                
                 <div class="flex flex-col items-center justify-center mt-2 gap-5">
                     {#if form?.error && !errorDismissed}
                         <div class="w-full mx-4 px-4 py-2.5 bg-red-900/30 border border-red-800 text-red-300 rounded-lg text-sm">
@@ -90,8 +76,8 @@
         <div class="flex flex-col gap-3">
             <h2 class="text-sm text-zinc-400 uppercase tracking-wider">Preview</h2>
             
-            {#if startDate && endDate && dayInterval && gracePeriod !== null}
-                {#each generateSlots({ startDate, endDate, dayInterval, gracePeriod }) as slot}
+            {#if startDate && endDate}
+                {#each generateSlots({ startDate, endDate }) as slot}
                     {@const isToday = today >= slot.start && today <= slot.end}
                     <div class="grid grid-cols-[2rem_1fr_auto_1fr] items-center gap-3 py-2 px-3 rounded 
                     {isToday ? 'bg-green-900/20 border border-green-800/50' : ''}">

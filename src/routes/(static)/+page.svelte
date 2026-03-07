@@ -39,12 +39,14 @@
                     Study complete
                 {:else if $page.data.reason === "study-not-started"}
                     Study not started
+                {:else if $page.data.reason === "no-group"}
+                    Group not yet assigned
                 {:else}
                     Unknown
                 {/if}
             </Dialog.Title>
         </Dialog.Header>
-        
+
         {#if $page.data.reason === "no-slot"}
             <p>Your next session is scheduled for:</p>
             <p class="text-2xl font-semibold text-center">{formatDate($page.data.next)}</p>
@@ -55,6 +57,8 @@
             <p>You've completed all your sessions. Thanks for participating!</p>
         {:else if $page.data.reason === "study-not-started"}
             <p>The study has not started yet. Please come back later.</p>
+        {:else if $page.data.reason === "no-group"}
+            <p>You haven't been assigned to a group yet. Please wait and try again later.</p>
         {:else}
             Unknown
         {/if}

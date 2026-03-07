@@ -78,7 +78,5 @@ export const mouseCoordinates = pgTable('mouse_coordinates', {
 export const studyConfig = pgTable('study_config', {
 	id: serial('id').primaryKey(),
 	startDate: date('start_date'),
-	endDate: date('end_date'),
-	dayInterval: integer('day_interval'),
-	gracePeriod: integer('grace_period')
+	endDate: date('end_date')
 });

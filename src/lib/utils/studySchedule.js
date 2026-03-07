@@ -1,30 +1,26 @@
-export function addDays(isoString, days)
-{
-    const [year, month, day] = isoString.split('-').map(Number);
-    const d = new Date(year, month - 1, day);
-    d.setDate(d.getDate() + days);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-// config: { startDate, endDate, dayInterval, gracePeriod }
+// config: { startDate, endDate }
 export function generateSlots(config)
 {
-    if (!config?.startDate || !config?.endDate || !config?.dayInterval) return [];
+    if (!config?.startDate || !config?.endDate) return [];
 
-    const { startDate, endDate, dayInterval, gracePeriod = 0 } = config;
+    const { startDate, endDate } = config;
     const slots = [];
-    let currentDate = startDate;
+    const [sy, sm, sd] = startDate.split('-').map(Number);
+    const [ey, em, ed] = endDate.split('-').map(Number);
+    let d = new Date(Date.UTC(sy, sm - 1, sd));
+    const end = new Date(Date.UTC(ey, em - 1, ed));
     let slotIndex = 1;
 
-    while (currentDate <= endDate)
+    while (d <= end)
     {
-        let end = addDays(currentDate, gracePeriod);
-        if (end > endDate) end = endDate;
-
-        slots.push({ slotIndex, start: currentDate, end });
-
-        currentDate = addDays(currentDate, dayInterval);
-        slotIndex++;
+        const dow = d.getUTCDay();
+        if (dow !== 0 && dow !== 6)
+        {
+            const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+            slots.push({ slotIndex, start: iso, end: iso });
+            slotIndex++;
+        }
+        d.setUTCDate(d.getUTCDate() + 1);
     }
 
     return slots;
