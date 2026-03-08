@@ -25,6 +25,10 @@ export function invitationEmail(name, code)
                         you will receive your group assignment along with instructions to change the setting if necessary after your first session.
                     </p>
                     
+                    <p style="margin:0 0 24px;color:#52525b;font-size:15px;line-height:1.6;">
+                        If you have any questions, please do not respond to this email, since this is an automated message. You can contact Abel at <a href="mailto:a.dieterich@students.uu.nl?SUBJECT=Help Experiment">a.dieterich@students.uu.nl</a>.
+                    </p>
+                    
                     <!-- Code -->
                     <div style="background:#f4f4f5;border-radius:8px;padding:24px;text-align:center;margin:0 0 24px;">
                         <p style="margin:0 0 8px;color:#71717a;font-size:12px;text-transform:uppercase;letter-spacing:0.1em;">Your participant code</p>
