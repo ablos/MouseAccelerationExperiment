@@ -21,6 +21,8 @@ export function invitationEmail(name, code)
                     <p style="margin:0 0 24px;color:#52525b;font-size:15px;line-height:1.6;">
                         You have been invited to participate in our mouse acceleration study. 
                         Use the code below to log in and get started.
+                        For the first session you are not required to change any settings yet, 
+                        you will receive your group assignment along with instructions to change the setting if necessary after your first session.
                     </p>
                     
                     <!-- Code -->
