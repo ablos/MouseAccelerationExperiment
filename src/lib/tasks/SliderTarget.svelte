@@ -21,7 +21,7 @@
 
 
 
-    let trackWidth  = $state(0);
+    let trackWidth  = $state(TRACK_WIDTH_BASE);
     // Current position x position of the handler. Y is constant
     let handleX     = $state(0);
     // This adjusts target's position

@@ -68,11 +68,19 @@
         }">{status}</span>
         
         <!-- Group -->
-        <span class="px-2 py-0.5 rounded capitalize {
-            participant.group === 'control' ? ' text-cyan-300' :
-            participant.group === 'experimental' ? ' text-red-300' :
-            'text-zinc-200'
-        }">{participant.group ?? 'Unassigned'}</span>
+        {#if status === 'Needs Assignment'}
+            <form method="POST" action="?/assignGroup" class="flex gap-1">
+                <input type="hidden" name="participantId" value={participant.id} />
+                <button name="group" value="control" class="px-2 py-0.5 rounded text-xs bg-zinc-800 text-cyan-300 hover:bg-cyan-900/40 cursor-pointer border border-zinc-700">C</button>
+                <button name="group" value="experimental" class="px-2 py-0.5 rounded text-xs bg-zinc-800 text-red-300 hover:bg-red-900/40 cursor-pointer border border-zinc-700">E</button>
+            </form>
+        {:else}
+            <span class="px-2 py-0.5 rounded capitalize {
+                participant.group === 'control' ? ' text-cyan-300' :
+                participant.group === 'experimental' ? ' text-red-300' :
+                'text-zinc-200'
+            }">{participant.group ?? 'Unassigned'}</span>
+        {/if}
         
         <!-- Session count -->
         <span>{sessionCount}<span class="text-zinc-600">&nbsp;/ {totalSlots}</span></span>
@@ -117,6 +125,13 @@
             {@render stat('Sex', `${maleCount}m / ${femaleCount}f / ${otherCount}o`, 'Male / Female / Other')}
         </Tooltip.Provider>
         
+        <!-- Auto-assign button -->
+        {#if unassignedCount > 0}
+            <form method="POST" action="?/autoAssign">
+                <Button type="submit" variant="outline" class="cursor-pointer">Auto-assign</Button>
+            </form>
+        {/if}
+
         <!-- New Participant Dialog -->
         <Dialog.Root>
             <Dialog.Trigger>
@@ -162,6 +177,14 @@
         </Dialog.Root>
     </div>
     
+    <!-- Auto-assign result message -->
+    {#if form?.autoAssigned !== undefined && !messageDismissed}
+        <div class="mx-4 px-4 py-2.5 bg-green-900/30 border border-green-800 text-green-300 rounded-lg text-sm flex items-center justify-between gap-4">
+            <span>{form.autoAssigned > 0 ? `Auto-assigned ${form.autoAssigned} participant${form.autoAssigned === 1 ? '' : 's'}.` : 'No participants with a completed baseline to assign.'}</span>
+            <button onclick={() => messageDismissed = true} class="text-green-600 hover:text-green-400 cursor-pointer shrink-0"><X size={14} /></button>
+        </div>
+    {/if}
+
     <!-- Participant invite success message -->
     {#if form?.code && !form?.error && !messageDismissed}
         <div class="mx-4 px-4 py-2.5 bg-green-900/30 border border-green-800 text-green-300 rounded-lg text-sm flex items-center justify-between gap-4">
