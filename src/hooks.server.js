@@ -22,8 +22,9 @@ export async function handle({ event, resolve })
     if (participantId)
         event.locals.participantId = Number(participantId);
         
-    // Redirect unauthenticated users to /login
-    if (!participantId && event.url.pathname !== '/login')
+    // Allow unauthenticated access to certain API endpoints
+    const publicPaths = ['/login', '/api/send-reminders', '/api/unsubscribe'];
+    if (!participantId && !publicPaths.includes(event.url.pathname))
         return Response.redirect(new URL('/login', event.url), 303);
         
     // Redirect already authenticated users away from /login
