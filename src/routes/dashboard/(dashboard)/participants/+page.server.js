@@ -1,9 +1,10 @@
 import { db } from '$lib/server/db';
 import { participants, participantContacts, sessions, tasks, trials, mouseCoordinates, studyConfig } from '$lib/server/db/schema';
-import { eq, and, inArray, isNull } from 'drizzle-orm';
+import { eq, and, inArray, isNull, isNotNull } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
 import { sendEmail } from '$lib/server/mailer.js';
 import { invitationEmail } from '$lib/server/emails/invitation.js';
+import { assignmentEmail } from '$lib/server/emails/assignment.js';
 import { getSessionMetrics } from '$lib/utils/metrics.js';
 
 export async function load() 
@@ -85,6 +86,21 @@ export const actions = {
             return fail(400, { assignError: 'Invalid data' });
 
         await db.update(participants).set({ group }).where(eq(participants.id, participantId));
+
+        const [[participant], [contact]] = await Promise.all([
+            db.select({ code: participants.code }).from(participants).where(eq(participants.id, participantId)),
+            db.select({ name: participantContacts.name, email: participantContacts.email })
+                .from(participantContacts).where(eq(participantContacts.participantId, participantId))
+        ]);
+
+        if (contact?.email) {
+            await sendEmail({
+                to: contact.email,
+                subject: 'Your group assignment — Mouse Acceleration Study',
+                html: assignmentEmail(contact.name, participant.code, group)
+            });
+        }
+
         return { assigned: true };
     },
 
@@ -137,11 +153,18 @@ export const actions = {
         // Sort ascending (lower avg rank = better performance)
         scored.sort((a, b) => a.score - b.score);
 
+        // Seed group counts from already-assigned participants
+        const alreadyAssigned = await db
+            .select({ group: participants.group })
+            .from(participants)
+            .where(isNotNull(participants.group));
+
+        let controlCount = alreadyAssigned.filter(p => p.group === 'control').length;
+        let experimentalCount = alreadyAssigned.filter(p => p.group === 'experimental').length;
+
         // Split into thirds, randomly assign within each subgroup
         const n = scored.length;
         const assignments = [];
-        let controlCount = 0;
-        let experimentalCount = 0;
 
         for (let i = 0; i < 3; i++) {
             const subgroup = scored.slice(Math.floor(i * n / 3), Math.floor((i + 1) * n / 3));
@@ -168,6 +191,29 @@ export const actions = {
 
         for (const { id, group } of assignments)
             await db.update(participants).set({ group }).where(eq(participants.id, id));
+
+        const assignedIds = assignments.map(a => a.id);
+        const contacts = await db
+            .select({
+                participantId: participantContacts.participantId,
+                name: participantContacts.name,
+                email: participantContacts.email,
+                code: participants.code
+            })
+            .from(participantContacts)
+            .innerJoin(participants, eq(participants.id, participantContacts.participantId))
+            .where(inArray(participantContacts.participantId, assignedIds));
+
+        await Promise.allSettled(
+            contacts.filter(c => c.email).map(c => {
+                const { group } = assignments.find(a => a.id === c.participantId);
+                return sendEmail({
+                    to: c.email,
+                    subject: 'Your group assignment — Mouse Acceleration Study',
+                    html: assignmentEmail(c.name, c.code, group)
+                });
+            })
+        );
 
         return { autoAssigned: assignments.length };
     }
