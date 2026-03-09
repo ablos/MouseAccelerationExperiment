@@ -140,6 +140,8 @@ export const actions = {
         // Split into thirds, randomly assign within each subgroup
         const n = scored.length;
         const assignments = [];
+        let controlCount = 0;
+        let experimentalCount = 0;
 
         for (let i = 0; i < 3; i++) {
             const subgroup = scored.slice(Math.floor(i * n / 3), Math.floor((i + 1) * n / 3));
@@ -150,9 +152,17 @@ export const actions = {
                 [subgroup[j], subgroup[k]] = [subgroup[k], subgroup[j]];
             }
 
-            const half = Math.ceil(subgroup.length / 2);
-            subgroup.forEach((item, idx) => {
-                assignments.push({ id: item.participant.id, group: idx < half ? 'control' : 'experimental' });
+            subgroup.forEach((item) => {
+                // Assign to whichever group has fewer participants globally; break ties randomly
+                let group;
+                if (controlCount < experimentalCount) group = 'control';
+                else if (experimentalCount < controlCount) group = 'experimental';
+                else group = Math.random() < 0.5 ? 'control' : 'experimental';
+
+                if (group === 'control') controlCount++;
+                else experimentalCount++;
+
+                assignments.push({ id: item.participant.id, group });
             });
         }
 
