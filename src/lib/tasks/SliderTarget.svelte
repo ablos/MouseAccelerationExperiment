@@ -102,7 +102,8 @@
         if (!isDragging) return;
         disableSampling()
         isDragging = false;
-        currentTrial.complete(e.clientX, e.clientY);
+        const rect = trackEl.getBoundingClientRect();
+        currentTrial.complete(rect.left + handleX, rect.top + rect.height / 2);
         window.removeEventListener('mousemove', onMouseMove);
         window.removeEventListener('mouseup', onMouseUp);
         nextTrial();

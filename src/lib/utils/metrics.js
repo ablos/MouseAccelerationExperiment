@@ -9,79 +9,84 @@ export function computeTime(trials)
     return totalTime / trials.length;
 }
 
-export function computeAccuracy(trials) 
+export function computeAccuracy(trials, xOnly = false)
 {
     trials = trials.filter((t) => t.endX !== null && t.endY !== null);
-    
+
     if (!trials.length) return null;
-    
-    let totalDistance = trials.reduce((sum, t) => sum + Math.sqrt((t.endX - t.targetX) ** 2 + (t.endY - t.targetY) ** 2), 0);
-    
+
+    let totalDistance = trials.reduce((sum, t) => {
+        if (xOnly) return sum + Math.abs(t.endX - t.targetX);
+        return sum + Math.sqrt((t.endX - t.targetX) ** 2 + (t.endY - t.targetY) ** 2);
+    }, 0);
+
     return totalDistance / trials.length;
 }
 
-export function computePLR(trials, allCoords) 
+export function computePLR(trials, allCoords, xOnly = false)
 {
     let totalPLR = 0;
     let validTrials = 0;
 
-    for (const trial of trials) 
+    for (const trial of trials)
     {
         const coords = allCoords.filter(c => c.trialId === trial.id).sort((a, b) => a.timestamp - b.timestamp);
-        
+
         if (coords.length < 2) continue;
-        
+
         let pathLength = 0;
-        
-        for (let i = 1; i < coords.length; i++) 
+
+        for (let i = 1; i < coords.length; i++)
         {
             const dx = coords[i].x - coords[i - 1].x;
             const dy = coords[i].y - coords[i - 1].y;
-            
-            pathLength += Math.sqrt(dx ** 2 + dy ** 2);
+
+            pathLength += xOnly ? Math.abs(dx) : Math.sqrt(dx ** 2 + dy ** 2);
         }
-        
-        let straightLength = Math.sqrt((trial.startX - trial.targetX) ** 2 + (trial.startY - trial.targetY) ** 2);
-        
+
+        let straightLength = xOnly
+            ? Math.abs(trial.startX - trial.targetX)
+            : Math.sqrt((trial.startX - trial.targetX) ** 2 + (trial.startY - trial.targetY) ** 2);
+
         if (straightLength === 0) continue;
-        
+
         totalPLR += pathLength / straightLength;
         validTrials++;
     }
-    
+
     if (!validTrials) return null;
     return totalPLR / validTrials;
 }
 
-export function computeSubmovements(trials, allCoords) 
+export function computeSubmovements(trials, allCoords, xOnly = false)
 {
     let submovementCount = 0;
     let validTrials = 0;
 
-    for (const trial of trials) 
+    for (const trial of trials)
     {
         const coords = allCoords.filter(c => c.trialId === trial.id).sort((a, b) => a.timestamp - b.timestamp);
-        
+
         if (coords.length < 2) continue;
-        
+
         validTrials++;
-        
+
         let inSubmovement = false;
         let currentDir = null;
         let belowThresholdSince = null;
         let pendingDirChange = false;
         let pendingDir = null;
         let confirmDist = 0;
-        
-        for (let i = 1; i < coords.length; i++) 
+
+        for (let i = 1; i < coords.length; i++)
         {
             let dt = coords[i].timestamp - coords[i - 1].timestamp;
-            
+
             if (dt == 0) continue;
-            
+
             let dx = coords[i].x - coords[i - 1].x;
-            let dy = coords[i].y - coords[i - 1].y;
-            let distance = Math.sqrt(dx ** 2 + dy ** 2);
+            let dy = xOnly ? 0 : coords[i].y - coords[i - 1].y;
+            let distance = xOnly ? Math.abs(dx) : Math.sqrt(dx ** 2 + dy ** 2);
             let velocity = distance / dt;
             let direction = Math.atan2(dy, dx);
             
@@ -189,19 +194,19 @@ export function getSessionMetrics(session, allTasks, allTrials, allCoords)
     const combinedTime = times.length ? times.reduce((s, t) => s + t, 0) / times.length : null;
     
     const clickingAccuracy = computeAccuracy(clickingTrials);
-    const slidingAccuracy = computeAccuracy(slidingTrials);
+    const slidingAccuracy = computeAccuracy(slidingTrials, true);
     const draggingAccuracy = computeAccuracy(draggingTrials);
     const accuracies = [clickingAccuracy, slidingAccuracy, draggingAccuracy].filter(t => t !== null);
     const combinedAccuracy = accuracies.length ? accuracies.reduce((s, a) => s + a, 0) / accuracies.length : null;
     
     const clickingPLR = computePLR(clickingTrials, allCoords);
-    const slidingPLR = computePLR(slidingTrials, allCoords);
+    const slidingPLR = computePLR(slidingTrials, allCoords, true);
     const draggingPLR = computePLR(draggingTrials, allCoords);
     const plrs = [clickingPLR, slidingPLR, draggingPLR].filter(t => t !== null);
     const combinedPLR = plrs.length ? plrs.reduce((s, p) => s + p, 0) / plrs.length : null;
     
     const clickingSubs = computeSubmovements(clickingTrials, allCoords);
-    const slidingSubs = computeSubmovements(slidingTrials, allCoords);
+    const slidingSubs = computeSubmovements(slidingTrials, allCoords, true);
     const draggingSubs = computeSubmovements(draggingTrials, allCoords);
     const subs = [clickingSubs, slidingSubs, draggingSubs].filter(t => t !== null);
     const combinedSubs = subs.length ? subs.reduce((s, sub) => s + sub, 0) / subs.length : null;
