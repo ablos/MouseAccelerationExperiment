@@ -2,8 +2,7 @@ import { db } from '$lib/server/db';
 import { participants, participantContacts, sessions, studyConfig } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
-import { Resend } from 'resend';
-import { env } from '$env/dynamic/private';
+import { sendEmail } from '$lib/server/mailer.js';
 import { invitationEmail } from '$lib/server/emails/invitation.js';
 
 export async function load() 
@@ -67,10 +66,7 @@ export const actions = {
             });
         }
         
-        const resend = new Resend(env.RESEND_API_KEY);
-        await resend.emails.send(
-        {
-            from: 'Mouse Acceleration Study <mouse-study@ablos.nl>',
+        await sendEmail({
             to: email,
             subject: 'You have been invited to participate in a study',
             html: invitationEmail(name, code)

@@ -3,8 +3,7 @@ import { participants, participantContacts, sessions, studyConfig } from '$lib/s
 import { eq, notInArray } from 'drizzle-orm';
 import { getCurrentSlot } from '$lib/studySchedule.js';
 import { redirect } from '@sveltejs/kit';
-import { Resend } from 'resend';
-import { env } from '$env/dynamic/private';
+import { sendEmail } from '$lib/server/mailer.js';
 import { reminderEmail } from '$lib/server/emails/reminder.js';
 
 async function getPendingParticipants(slot)
@@ -60,11 +59,9 @@ export const actions =
         const withEmail = pending.filter(p => p.email);
         if (!withEmail.length) return { remindersSent: 0 };
 
-        const resend = new Resend(env.RESEND_API_KEY);
         await Promise.allSettled(
             withEmail.map(p =>
-                resend.emails.send({
-                    from: 'Mouse Acceleration Study <mouse-study@ablos.nl>',
+                sendEmail({
                     to: p.email,
                     subject: 'Reminder: complete your session today',
                     html: reminderEmail(p.name, p.code, 'afternoon', p.id)
