@@ -45,5 +45,7 @@ export async function load({ locals })
             redirect(303, '/?reason=no-group');
     }
 
-    return { isFirstSession: existing.length === 0, slot };
+    const [participant] = await db.select({ group: participants.group }).from(participants).where(eq(participants.id, locals.participantId));
+
+    return { isFirstSession: existing.length === 0, slot, group: participant?.group ?? null };
 }

@@ -109,8 +109,16 @@ export const actions = {
         if (!unassigned.length) return { autoAssigned: 0 };
 
         const pIds = unassigned.map(p => p.id);
-        const baselineSessions = await db.select().from(sessions)
-            .where(and(inArray(sessions.participantId, pIds), eq(sessions.slot, 1)));
+        const allSessions = await db.select().from(sessions)
+            .where(inArray(sessions.participantId, pIds));
+
+        // Use the lowest-slot session per participant as their baseline
+        const baselineMap = new Map();
+        for (const s of allSessions) {
+            const existing = baselineMap.get(s.participantId);
+            if (!existing || s.slot < existing.slot) baselineMap.set(s.participantId, s);
+        }
+        const baselineSessions = [...baselineMap.values()];
 
         if (!baselineSessions.length) return { autoAssigned: 0 };
 

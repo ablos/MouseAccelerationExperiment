@@ -12,7 +12,7 @@
 	import Label from "$lib/components/ui/label/label.svelte";
 	import Slider from "$lib/components/ui/slider/slider.svelte";
     
-    let { pxPerMm, isFirstSession, slot } = $props();
+    let { pxPerMm, isFirstSession, slot, group } = $props();
     
     let didCheck = $state(false);
     let samePC = $state(false);
@@ -122,7 +122,15 @@
                     
                     <div class="flex items-start gap-3">
                         <Checkbox id="same-setting" bind:checked={sameSetting} />
-                        <Label for="same-setting">My mouse acceleration setting is the assigned setting.</Label>
+                        <Label for="same-setting">
+                            {#if group === 'control'}
+                                My mouse acceleration setting is <strong>ON</strong>.
+                            {:else if group === 'experimental'}
+                                My mouse acceleration setting is <strong>OFF</strong>.
+                            {:else}
+                                My mouse acceleration setting is the assigned setting.
+                            {/if}
+                        </Label>
                     </div>
                     
                     <div class="flex items-start gap-3 mb-6">
