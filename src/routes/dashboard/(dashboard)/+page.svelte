@@ -37,7 +37,12 @@
             </div>
 
             {#if form?.remindersSent != null}
-                <p class="text-green-400 text-sm">Sent reminders to {form.remindersSent} participant{form.remindersSent === 1 ? '' : 's'}.</p>
+                <div class="flex flex-col gap-1">
+                    <p class="text-green-400 text-sm">Sent reminders to {form.remindersSent} participant{form.remindersSent === 1 ? '' : 's'}.</p>
+                    {#if form.unsubscribed?.length}
+                        <p class="text-zinc-400 text-sm">Skipped (reminders off): {form.unsubscribed.join(', ')}</p>
+                    {/if}
+                </div>
             {/if}
 
             {#if data.pending.length > 0}

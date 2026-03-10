@@ -22,6 +22,8 @@ async function getPendingParticipants(slot)
             name: participantContacts.name,
             email: participantContacts.email,
             phone: participantContacts.phone,
+            emailReminders: participantContacts.emailReminders,
+            morningReminderDate: participantContacts.morningReminderDate,
             afternoonReminderDate: participantContacts.afternoonReminderDate
         })
         .from(participants)
@@ -56,11 +58,15 @@ export const actions =
         const slot = getCurrentSlot(config);
         if (!slot) return { remindersSent: 0 };
 
-        const todayISO = new Date().toISOString().slice(0, 10);
+        const now = new Date();
+        const todayISO = now.toISOString().slice(0, 10);
+        const type = now.getHours() < 12 ? 'morning' : 'afternoon';
+        const dateCol = type === 'morning' ? 'morningReminderDate' : 'afternoonReminderDate';
 
         const pending = await getPendingParticipants(slot);
-        const withEmail = pending.filter(p => p.email && p.afternoonReminderDate !== todayISO);
-        if (!withEmail.length) return { remindersSent: 0 };
+        const withEmail = pending.filter(p => p.email && p.emailReminders && p[dateCol] !== todayISO);
+        const unsubscribed = pending.filter(p => p.email && !p.emailReminders).map(p => p.name ?? p.code);
+        if (!withEmail.length) return { remindersSent: 0, unsubscribed };
 
         let remindersSent = 0;
         for (const p of withEmail)
@@ -70,11 +76,11 @@ export const actions =
                 await sendEmail({
                     to: p.email,
                     subject: 'Reminder: complete your session today',
-                    html: reminderEmail(p.name, p.code, 'afternoon', p.id)
+                    html: reminderEmail(p.name, p.code, type, p.id)
                 });
                 await db
                     .update(participantContacts)
-                    .set({ afternoonReminderDate: todayISO })
+                    .set({ [dateCol]: todayISO })
                     .where(eq(participantContacts.participantId, p.id));
                 remindersSent++;
             }
@@ -84,6 +90,6 @@ export const actions =
             }
         }
 
-        return { remindersSent };
+        return { remindersSent, unsubscribed };
     }
 }
