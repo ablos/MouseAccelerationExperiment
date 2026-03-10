@@ -2,6 +2,8 @@ import { db } from '$lib/server/db';
 import { participants, participantContacts, sessions, studyConfig, tasks, trials, mouseCoordinates } from '$lib/server/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { fail } from '@sveltejs/kit';
+import { sendEmail } from '$lib/server/mailer.js';
+import { assignmentEmail } from '$lib/server/emails/assignment.js';
 
 export async function load({ params }) 
 {
@@ -78,5 +80,26 @@ export const actions = {
         }
         
         return { success: true };
+    },
+
+    resendAssignmentEmail: async ({ params }) => {
+        const { id } = params;
+
+        const [participant] = await db.select().from(participants).where(eq(participants.id, id));
+        const [contact] = await db.select().from(participantContacts).where(eq(participantContacts.participantId, id));
+
+        if (!participant?.group)
+            return fail(400, { error: 'Participant has no group assigned.' });
+
+        if (!contact?.email)
+            return fail(400, { error: 'Participant has no email address.' });
+
+        await sendEmail({
+            to: contact.email,
+            subject: 'Your group assignment — Mouse Acceleration Study',
+            html: assignmentEmail(contact.name, participant.code, participant.group)
+        });
+
+        return { emailResent: true };
     }
 }

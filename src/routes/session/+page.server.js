@@ -38,7 +38,7 @@ export async function load({ locals })
             : '/?reason=slot-done');
     }
 
-    if (slot > 1)
+    if (slot > 1 && existing.length > 0)
     {
         const [participant] = await db.select({ group: participants.group }).from(participants).where(eq(participants.id, locals.participantId));
         if (!participant?.group)

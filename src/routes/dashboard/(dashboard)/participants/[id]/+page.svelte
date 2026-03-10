@@ -100,6 +100,13 @@
             }">{status}</span>
         </div>
         
+        <div class="flex items-center gap-2">
+            {#if data.participant.group && data.contact?.email}
+                <form method="POST" action="?/resendAssignmentEmail">
+                    <Button type="submit" variant="outline" class="cursor-pointer">Resend Assignment Email</Button>
+                </form>
+            {/if}
+
         <!-- Contact info dialog -->
         <Dialog.Root>
             <Dialog.Trigger>
@@ -147,8 +154,9 @@
                 </Dialog.Footer>
             </Dialog.Content>
         </Dialog.Root>
+        </div>
     </div>
-    
+
     <!-- Participant invite success message -->
     {#if form?.success && !messageDismissed}
         <div class="mx-4 px-4 py-2.5 bg-green-900/30 border border-green-800 text-green-300 rounded-lg text-sm flex items-center justify-between gap-4">
@@ -159,6 +167,16 @@
         </div>
     {/if}
     
+    <!-- Assignment email resent message -->
+    {#if form?.emailResent && !messageDismissed}
+        <div class="mx-4 px-4 py-2.5 bg-green-900/30 border border-green-800 text-green-300 rounded-lg text-sm flex items-center justify-between gap-4">
+            <span>Assignment email resent successfully.</span>
+            <button onclick={() => messageDismissed = true} class="text-green-600 hover:text-green-400 cursor-pointer shrink-0">
+                <X size={14} />
+            </button>
+        </div>
+    {/if}
+
     <!-- Participant contact update error message -->
     {#if form?.error && !messageDismissed}
         <div class="mx-4 px-4 py-2.5 bg-red-900/30 border border-red-800 text-red-300 rounded-lg text-sm flex items-center justify-between gap-4">

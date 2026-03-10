@@ -18,7 +18,9 @@ export const participantContacts = pgTable('participant_contacts', {
 	email: text('email'),
 	phone: text('phone'),
 	notes: text('notes'),
-	emailReminders: boolean('email_reminders').notNull().default(true)
+	emailReminders: boolean('email_reminders').notNull().default(true),
+	morningReminderDate: date('morning_reminder_date'),
+	afternoonReminderDate: date('afternoon_reminder_date')
 });
 
 export const sessions = pgTable('sessions', {

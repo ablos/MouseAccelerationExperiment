@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { participants, participantContacts, sessions, studyConfig } from '$lib/server/db/schema';
-import { and, eq, notInArray } from 'drizzle-orm';
+import { and, eq, isNull, ne, notInArray, or } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { sendEmail } from '$lib/server/mailer.js';
 import { reminderEmail } from '$lib/server/emails/reminder.js';
@@ -23,6 +23,11 @@ export async function GET({ url })
     if (!slot)
         return json({ sent: 0, reason: 'Not a session day' });
 
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const dateCol = type === 'morning'
+        ? participantContacts.morningReminderDate
+        : participantContacts.afternoonReminderDate;
+
     // Find participant IDs that already have a session for this slot
     const completedSessions = await db
         .select({ participantId: sessions.participantId })
@@ -31,8 +36,9 @@ export async function GET({ url })
 
     const completedIds = completedSessions.map(s => s.participantId);
 
-    // Get all contacts who have email reminders enabled and haven't started this slot
-    const baseCondition = eq(participantContacts.emailReminders, true);
+    // Get contacts who have reminders enabled, haven't been reminded today, and haven't started yet
+    const notRemindedToday = or(isNull(dateCol), ne(dateCol, todayISO));
+    const baseCondition = and(eq(participantContacts.emailReminders, true), notRemindedToday);
     const condition = completedIds.length
         ? and(baseCondition, notInArray(participantContacts.participantId, completedIds))
         : baseCondition;
@@ -51,24 +57,40 @@ export async function GET({ url })
     const withEmail = contacts.filter(c => c.email);
 
     if (!withEmail.length)
-        return json({ sent: 0, reason: 'No pending participants with email' });
+        return json({ sent: 0, reason: 'No pending participants to remind' });
 
     const subject = type === 'morning'
         ? 'Reminder: today is a session day'
         : 'Last reminder: complete your session today';
 
-    const results = await Promise.allSettled(
-        withEmail.map(c =>
-            sendEmail({
+    let sent = 0;
+    const failures = [];
+
+    for (const c of withEmail)
+    {
+        try
+        {
+            await sendEmail({
                 to: c.email,
                 subject,
                 html: reminderEmail(c.name, c.code, type, c.participantId)
-            })
-        )
-    );
+            });
 
-    const sent = results.filter(r => r.status === 'fulfilled').length;
-    const failed = results.filter(r => r.status === 'rejected').length;
+            await db
+                .update(participantContacts)
+                .set(type === 'morning'
+                    ? { morningReminderDate: todayISO }
+                    : { afternoonReminderDate: todayISO })
+                .where(eq(participantContacts.participantId, c.participantId));
 
-    return json({ sent, failed });
+            sent++;
+        }
+        catch (e)
+        {
+            failures.push(e.message);
+            console.error(`Failed to send reminder to participant ${c.participantId}:`, e.message);
+        }
+    }
+
+    return json({ sent, failed: failures.length, failures });
 }

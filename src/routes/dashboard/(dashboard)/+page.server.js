@@ -21,7 +21,8 @@ async function getPendingParticipants(slot)
             code: participants.code,
             name: participantContacts.name,
             email: participantContacts.email,
-            phone: participantContacts.phone
+            phone: participantContacts.phone,
+            afternoonReminderDate: participantContacts.afternoonReminderDate
         })
         .from(participants)
         .leftJoin(participantContacts, eq(participantContacts.participantId, participants.id));
@@ -55,20 +56,34 @@ export const actions =
         const slot = getCurrentSlot(config);
         if (!slot) return { remindersSent: 0 };
 
+        const todayISO = new Date().toISOString().slice(0, 10);
+
         const pending = await getPendingParticipants(slot);
-        const withEmail = pending.filter(p => p.email);
+        const withEmail = pending.filter(p => p.email && p.afternoonReminderDate !== todayISO);
         if (!withEmail.length) return { remindersSent: 0 };
 
-        await Promise.allSettled(
-            withEmail.map(p =>
-                sendEmail({
+        let remindersSent = 0;
+        for (const p of withEmail)
+        {
+            try
+            {
+                await sendEmail({
                     to: p.email,
                     subject: 'Reminder: complete your session today',
                     html: reminderEmail(p.name, p.code, 'afternoon', p.id)
-                })
-            )
-        );
+                });
+                await db
+                    .update(participantContacts)
+                    .set({ afternoonReminderDate: todayISO })
+                    .where(eq(participantContacts.participantId, p.id));
+                remindersSent++;
+            }
+            catch (e)
+            {
+                console.error(`Failed to send reminder to participant ${p.id}:`, e.message);
+            }
+        }
 
-        return { remindersSent: withEmail.length };
+        return { remindersSent };
     }
 }

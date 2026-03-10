@@ -20,8 +20,8 @@ services:
     # Sends reminders at 08:00 and 15:00 every day.
     # Set CRON_SECRET in your .env file to match the app's CRON_SECRET.
     command: >-
-      sh -c "echo '0 8 * * * wget -q -O /dev/null https://experiment.ablos.nl/api/send-reminders?type=morning&secret=${CRON_SECRET}' > /etc/crontabs/root
-      && echo '0 15 * * * wget -q -O /dev/null https://experiment.ablos.nl/api/send-reminders?type=afternoon&secret=${CRON_SECRET}' >> /etc/crontabs/root
+      sh -c "echo '0 8 * * * wget -q -O /dev/null https://experiment.ablos.nl/api/send-reminders?type=morning\&secret=${CRON_SECRET}' > /etc/crontabs/root
+      && echo '0 15 * * * wget -q -O /dev/null https://experiment.ablos.nl/api/send-reminders?type=afternoon\&secret=${CRON_SECRET}' >> /etc/crontabs/root
       && crond -f -l 2"
 
 volumes:
