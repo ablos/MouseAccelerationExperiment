@@ -122,15 +122,23 @@
                     
                     <div class="flex items-start gap-3">
                         <Checkbox id="same-setting" bind:checked={sameSetting} />
-                        <Label for="same-setting">
-                            {#if group === 'control'}
-                                My mouse acceleration setting is <strong>ON</strong>.
-                            {:else if group === 'experimental'}
-                                My mouse acceleration setting is <strong>OFF</strong>.
-                            {:else}
-                                My mouse acceleration setting is the assigned setting.
-                            {/if}
-                        </Label>
+                        <div class="flex flex-col gap-1">
+                            <Label for="same-setting">
+                                {#if group === 'control'}
+                                    My mouse acceleration setting is <strong>ON</strong>.
+                                {:else if group === 'experimental'}
+                                    My mouse acceleration setting is <strong>OFF</strong>.
+                                {:else}
+                                    My mouse acceleration setting is the assigned setting.
+                                {/if}
+                            </Label>
+                            <p class="text-xs text-muted-foreground">
+                                Need help finding this setting?
+                                <a href="/tutorials/windows.pdf" target="_blank" class="underline">Windows</a>
+                                /
+                                <a href="/tutorials/macos.pdf" target="_blank" class="underline">macOS</a>
+                            </p>
+                        </div>
                     </div>
                     
                     <div class="flex items-start gap-3 mb-6">
