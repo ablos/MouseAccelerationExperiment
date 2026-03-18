@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { participants, participantContacts, sessions, studyConfig } from '$lib/server/db/schema';
-import { and, eq, isNull, ne, notInArray, or } from 'drizzle-orm';
+import { and, eq, inArray, isNull, ne, notInArray, or } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 import { sendEmail } from '$lib/server/mailer.js';
 import { reminderEmail } from '$lib/server/emails/reminder.js';
@@ -37,8 +37,13 @@ export async function GET({ url })
     const completedIds = completedSessions.map(s => s.participantId);
 
     // Get contacts who have reminders enabled, haven't been reminded today, and haven't started yet
+    // Participants 1 and 17 always get reminders regardless of preference (work email auto-unsubscribes)
+    const remindersOverride = [1, 17];
     const notRemindedToday = or(isNull(dateCol), ne(dateCol, todayISO));
-    const baseCondition = and(eq(participantContacts.emailReminders, true), notRemindedToday);
+    const baseCondition = and(
+        or(eq(participantContacts.emailReminders, true), inArray(participantContacts.participantId, remindersOverride)),
+        notRemindedToday
+    );
     const condition = completedIds.length
         ? and(baseCondition, notInArray(participantContacts.participantId, completedIds))
         : baseCondition;
