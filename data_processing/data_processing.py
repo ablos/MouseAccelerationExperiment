@@ -62,7 +62,7 @@ trials = trials.merge(
 
 # Merge in participant_id, screen_px_per_mm and session_number from sessions
 trials = trials.merge(
-    dfs[SESSIONS][["id", "participant_id", "screen_px_per_mm", "session_number"]],
+    dfs[SESSIONS][["id", "participant_id", "screen_px_per_mm", "session_number", "slot", "hours_since_last_session"]],
     left_on="session_id", right_on= "id",
     suffixes=("", "_session")
 )
@@ -154,6 +154,16 @@ def compute_submovements(row):
 
 trials["submovement_count"] = trials.apply(compute_submovements, axis=1)
 
+# Fitts Throughput
+D = np.where(
+    slider_mask,
+    np.abs(trials["start_x"] - trials["target_x"]),
+    np.sqrt((trials["start_x"] - trials["target_x"]) ** 2 + (trials["start_y"] - trials["target_y"]) ** 2)
+)
+W = trials["target_size"]
+trials["id_bits"] = np.log2(2 * D / W)
+trials["throughput"] = trials["id_bits"] / (trials["completion_time_ms"] / 1000)
+
 trials.to_csv(f"{PREFIX}/results.csv", index=False)
 
 print(f"\nDone in {time.time() - t_start:.1f}s")
@@ -166,3 +176,6 @@ print(f"\nMean PLR:")
 print(trials.groupby("task_type")["plr"].mean().map(lambda x: f"  {x:.3f}"))
 print(f"\nMean submovements:")
 print(trials.groupby("task_type")["submovement_count"].mean().map(lambda x: f"  {x:.2f}"))
+print(f"\nNegative ID trials (target larger than distance): {(trials['id_bits'] < 0).sum()}")
+print(f"\nMean throughput (bits/s):")
+print(trials.groupby("task_type")["throughput"].mean().map(lambda x: f"  {x:.2f}"))
