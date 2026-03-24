@@ -12,7 +12,7 @@ TRIALS = "trials"
 
 filenames = [MOUSE_COORDINATES, PARTICIPANTS, SESSIONS, TASKS, TRIALS]
 
-dfs = {name: pd.read_csv(f"{PREFIX}{name}.csv") for name in filenames}
+dfs = { name: pd.read_csv(f"{PREFIX}{name}.csv") for name in filenames }
 
 # -- Filter for valid entries
 
@@ -147,5 +147,4 @@ def compute_submovements(row):
 
 trials["submovement_count"] = trials.apply(compute_submovements, axis=1)
 
-print(trials.groupby("task_type")["submovement_count"].describe())
-print(trials.groupby("task_type")["submovement_count"].apply(lambda x: (x == 0).sum()))
+trials.to_csv(f"{PREFIX}/results.csv", index=False)
