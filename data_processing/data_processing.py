@@ -1,7 +1,10 @@
+import time
 import pandas as pd
 import numpy as np
 from scipy.signal import find_peaks
 from scipy.ndimage import gaussian_filter1d
+
+t_start = time.time()
 
 PREFIX = "data/"
 MOUSE_COORDINATES = "mouse_coordinates"
@@ -13,6 +16,9 @@ TRIALS = "trials"
 filenames = [MOUSE_COORDINATES, PARTICIPANTS, SESSIONS, TASKS, TRIALS]
 
 dfs = { name: pd.read_csv(f"{PREFIX}{name}.csv") for name in filenames }
+
+print(f"Loaded {sum(len(dfs[name]) for name in filenames)} rows across {len(filenames)} tables")
+print(f"  {len(dfs[PARTICIPANTS])} participants | {len(dfs[SESSIONS])} sessions | {len(dfs[TASKS])} tasks | {len(dfs[TRIALS])} trials | {len(dfs[MOUSE_COORDINATES])} coordinates")
 
 # -- Filter for valid entries
 
@@ -33,7 +39,8 @@ valid_trids = set(dfs[TRIALS]["id"])
 
 dfs[MOUSE_COORDINATES] = dfs[MOUSE_COORDINATES][dfs[MOUSE_COORDINATES]["trial_id"].isin(valid_trids)]
 
-print("Valid participants: " + str(len(valid_pids)))
+print(f"\nAfter filtering (>= 7 sessions, excluding researchers):")
+print(f"  {len(valid_pids)} participants | {len(dfs[SESSIONS])} sessions | {len(dfs[TRIALS])} trials | {len(dfs[MOUSE_COORDINATES])} coordinates")
 
 
 
@@ -148,3 +155,14 @@ def compute_submovements(row):
 trials["submovement_count"] = trials.apply(compute_submovements, axis=1)
 
 trials.to_csv(f"{PREFIX}/results.csv", index=False)
+
+print(f"\nDone in {time.time() - t_start:.1f}s")
+print(f"\n{len(trials)} trials | {trials['participant_id'].nunique()} participants | {trials['session_id'].nunique()} sessions")
+print(f"\nHit rate:")
+print(trials.groupby("task_type")["hit"].mean().map(lambda x: f"  {x*100:.1f}%"))
+print(f"\nMedian completion time:")
+print(trials.groupby("task_type")["completion_time_ms"].median().map(lambda x: f"  {x:.0f}ms"))
+print(f"\nMean PLR:")
+print(trials.groupby("task_type")["plr"].mean().map(lambda x: f"  {x:.3f}"))
+print(f"\nMean submovements:")
+print(trials.groupby("task_type")["submovement_count"].mean().map(lambda x: f"  {x:.2f}"))
