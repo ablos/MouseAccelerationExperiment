@@ -24,3 +24,4 @@ vite.config.ts.timestamp-*
 
 # Data processing
 data_processing/data/
+data_processing/notes.txt
