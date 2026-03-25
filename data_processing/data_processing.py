@@ -215,10 +215,3 @@ print(trials.groupby("task_type")["submovement_count"].mean().map(lambda x: f"  
 print(f"\nNegative ID trials (target larger than distance): {(trials['id_bits'] < 0).sum()}")
 print(f"\nMean throughput (bits/s):")
 print(trials.groupby("task_type")["throughput"].mean().map(lambda x: f"  {x:.2f}"))
-
-from scipy.stats import shapiro, normaltest
-
-for task in ["clicking", "slider", "dragging"]:
-    data = trials[trials["task_type"] == task]["completion_time_ms"]
-    stat, p = shapiro(data)
-    print(f"{task}: p={p:.4f} → {'normal ✅' if p > 0.05 else 'not normal ❌'}")
