@@ -39,6 +39,7 @@ valid_trids = set(dfs[TRIALS]["id"])
 
 dfs[MOUSE_COORDINATES] = dfs[MOUSE_COORDINATES][dfs[MOUSE_COORDINATES]["trial_id"].isin(valid_trids)]
 
+
 print(f"\nAfter filtering (>= 7 sessions, excluding researchers):")
 print(f"  {len(valid_pids)} participants | {len(dfs[SESSIONS])} sessions | {len(dfs[TRIALS])} trials | {len(dfs[MOUSE_COORDINATES])} coordinates")
 
@@ -79,6 +80,7 @@ trials["start_time"] = pd.to_datetime(trials["start_time"], format="ISO8601")
 trials["end_time"] = pd.to_datetime(trials["end_time"], format="ISO8601")
 trials["completion_time_ms"] = (trials["end_time"] - trials["start_time"]).dt.total_seconds() * 1000
 
+
 # Accuracy
 slider_mask = trials["task_type"] == "slider"
 
@@ -95,7 +97,22 @@ trials["hit"] = np.where(
 
 # Path Length Ratio
 coords = dfs[MOUSE_COORDINATES].sort_values(["trial_id", "timestamp"])
+# --- Outlier filtering per trial using IQR. Coordinate level outlier ---
+def filter_coordinate_outliers(group):
+    for col in ["x", "y"]:
+        Q1 = group[col].quantile(0.25)
+        Q3 = group[col].quantile(0.75)
+        IQR = Q3 - Q1
+        group = group[(group[col] >= Q1 - 1.5 * IQR) & (group[col] <= Q3 + 1.5 * IQR)]
+    return group
+
+coords_before = len(coords)
+coords = coords.groupby("trial_id", group_keys=False).apply(filter_coordinate_outliers)
+print(f"\nOutlier filtering: removed {coords_before - len(coords)} coordinate points ({(coords_before - len(coords)) / coords_before * 100:.1f}%)")
+
 coords_by_trial = { tid: grp for tid, grp in coords.groupby("trial_id") }
+
+
 
 def compute_plr(row):
     trial_coords = coords_by_trial.get(row["id"])
@@ -164,6 +181,25 @@ W = trials["target_size"]
 trials["id_bits"] = np.log2(2 * D / W)
 trials["throughput"] = trials["id_bits"] / (trials["completion_time_ms"] / 1000)
 
+# filter trials based on completion time
+# --- Trial-level outlier filtering  ---
+def filter_trial_outliers(group):
+    col = "throughput"
+    Q1 = group[col].quantile(0.25)
+    Q3 = group[col].quantile(0.75)
+    IQR = Q3 - Q1
+    group = group[
+        (group[col] >= Q1 - 1.5 * IQR) &
+        (group[col] <= Q3 + 1.5 * IQR)
+    ]
+    return group
+
+trials_before = len(trials)
+print(trials_before)
+trials = trials.groupby("task_type", group_keys=False).apply(filter_trial_outliers)
+print(f"\nTrial outlier filtering: removed {trials_before - len(trials)} trials ({(trials_before - len(trials)) / trials_before * 100:.1f}%)")
+
+
 trials.to_csv(f"{PREFIX}/results.csv", index=False)
 
 print(f"\nDone in {time.time() - t_start:.1f}s")
@@ -179,3 +215,10 @@ print(trials.groupby("task_type")["submovement_count"].mean().map(lambda x: f"  
 print(f"\nNegative ID trials (target larger than distance): {(trials['id_bits'] < 0).sum()}")
 print(f"\nMean throughput (bits/s):")
 print(trials.groupby("task_type")["throughput"].mean().map(lambda x: f"  {x:.2f}"))
+
+from scipy.stats import shapiro, normaltest
+
+for task in ["clicking", "slider", "dragging"]:
+    data = trials[trials["task_type"] == task]["completion_time_ms"]
+    stat, p = shapiro(data)
+    print(f"{task}: p={p:.4f} → {'normal ✅' if p > 0.05 else 'not normal ❌'}")
