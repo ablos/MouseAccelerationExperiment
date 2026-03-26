@@ -138,7 +138,7 @@ metrics = [
     ("hit_rate", "Hit Rate", "higher = better"),
 ]
 
-pid_to_code = dfs[PARTICIPANTS].set_index("id")["code"].to_dict()
+pid_to_code = dfs[PARTICIPANTS].set_index("id")["code"].apply(lambda x: str(int(x)) if isinstance(x, float) else str(x)).to_dict()
 
 for pid in sorted(trials["participant_id"].unique()):
     pdata = agg[agg["participant_id"] == pid]
@@ -196,7 +196,7 @@ leaderboard_metrics = [
     ("submovement_count", "Submovement Count", False),
     ("hit_rate", "Hit Rate", True),
 ]
-pid_code = dfs[PARTICIPANTS].set_index("id")["code"]
+pid_code = dfs[PARTICIPANTS].set_index("id")["code"].apply(lambda x: str(int(x)) if isinstance(x, float) else str(x))
 
 # --- Leaderboard: raw metric averages ---
 for metric, label, higher_is_better in leaderboard_metrics:
@@ -225,4 +225,4 @@ print("\n=== LEADERBOARD: Throughput Improvement (baseline → last session) ===
 print(f"{'Rank':<6} {'ID':<6} {'Code':<12} {'Baseline':>10} {'Last':>10} {'% Change':>10}")
 for i, row in improvement.iterrows():
     arrow = "▲" if row["delta"] >= 0 else "▼"
-    print(f"{i+1:<6} {int(row['participant_id']):<6} {row['code']:<12} {row['slot1']:>10.3f} {row['last']:>10.3f} {arrow}{abs(row['pct_change']):>8.1f}%")
+    print(f"{i+1:<6} {int(row['participant_id']):<6} {row['code']:<12} {row['slot1']:>10.3f} {row['last']:>10.3f} {arrow}{row['pct_change']:>+8.1f}%")
