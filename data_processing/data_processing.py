@@ -17,6 +17,14 @@ filenames = [MOUSE_COORDINATES, PARTICIPANTS, SESSIONS, TASKS, TRIALS]
 
 dfs = { name: pd.read_csv(f"{PREFIX}{name}.csv") for name in filenames }
 
+# Due to some bug a couple of tasks were saved twice, so filter them out:
+dfs[TASKS] = dfs[TASKS].sort_values("id").drop_duplicates(subset=["session_id", "task_type"], keep="first")
+
+# Filter out incomplete sessions (participant did not complete all tasks)
+complete_sessions = dfs[TASKS].groupby("session_id")["task_type"].nunique()
+complete_sids = set(complete_sessions[complete_sessions == 3].index)
+dfs[SESSIONS] = dfs[SESSIONS][dfs[SESSIONS]["id"].isin(complete_sids) & dfs[SESSIONS]["end_time"].notna()]
+
 print(f"Loaded {sum(len(dfs[name]) for name in filenames)} rows across {len(filenames)} tables")
 print(f"  {len(dfs[PARTICIPANTS])} participants | {len(dfs[SESSIONS])} sessions | {len(dfs[TASKS])} tasks | {len(dfs[TRIALS])} trials | {len(dfs[MOUSE_COORDINATES])} coordinates")
 
@@ -45,9 +53,18 @@ print(f"  {len(valid_pids)} participants | {len(dfs[SESSIONS])} sessions | {len(
 
 
 
-# -- Number sessions
-dfs[SESSIONS] = dfs[SESSIONS].sort_values(["participant_id", "start_time"])
-dfs[SESSIONS]["session_number"] = dfs[SESSIONS].groupby("participant_id").cumcount() + 1
+# Participants who missed slot 1 did their baseline on slot 2, so basically their week started a day late and they missed the last day of the week
+# To correct for this we shift over slot 2, 3, 4 and 5 to slot 1, 2, 3 and 4 for those participants,
+# slot 6-10 stay the same, since the weekend break was the same for everyone
+missing_slot1 = set(dfs[PARTICIPANTS].loc[dfs[PARTICIPANTS]["group"] != "monitor", "id"]) - set(dfs[SESSIONS].loc[dfs[SESSIONS]["slot"] == 1, "participant_id"])
+
+def shift_slots(row):
+    if row["participant_id"] in missing_slot1 and row["slot"] in [2, 3, 4, 5]:
+        return row["slot"] - 1
+    
+    return row["slot"]
+
+dfs[SESSIONS]["slot"] = dfs[SESSIONS].apply(shift_slots, axis=1)
 
 
 
@@ -61,9 +78,9 @@ trials = trials.merge(
     suffixes=("", "_task")
 )
 
-# Merge in participant_id, screen_px_per_mm and session_number from sessions
+# Merge in participant_id, screen_px_per_mm, slot and hours since last session from sessions
 trials = trials.merge(
-    dfs[SESSIONS][["id", "participant_id", "screen_px_per_mm", "session_number", "slot", "hours_since_last_session"]],
+    dfs[SESSIONS][["id", "participant_id", "screen_px_per_mm", "slot", "hours_since_last_session"]],
     left_on="session_id", right_on= "id",
     suffixes=("", "_session")
 )
@@ -97,19 +114,6 @@ trials["hit"] = np.where(
 
 # Path Length Ratio
 coords = dfs[MOUSE_COORDINATES].sort_values(["trial_id", "timestamp"])
-# --- Outlier filtering per trial using IQR. Coordinate level outlier ---
-def filter_coordinate_outliers(group):
-    for col in ["x", "y"]:
-        Q1 = group[col].quantile(0.25)
-        Q3 = group[col].quantile(0.75)
-        IQR = Q3 - Q1
-        group = group[(group[col] >= Q1 - 1.5 * IQR) & (group[col] <= Q3 + 1.5 * IQR)]
-    return group
-
-coords_before = len(coords)
-coords = coords.groupby("trial_id", group_keys=False).apply(filter_coordinate_outliers)
-print(f"\nOutlier filtering: removed {coords_before - len(coords)} coordinate points ({(coords_before - len(coords)) / coords_before * 100:.1f}%)")
-
 coords_by_trial = { tid: grp for tid, grp in coords.groupby("trial_id") }
 
 
@@ -181,24 +185,27 @@ W = trials["target_size"]
 trials["id_bits"] = np.log2(2 * D / W)
 trials["throughput"] = trials["id_bits"] / (trials["completion_time_ms"] / 1000)
 
-# filter trials based on completion time
-# --- Trial-level outlier filtering  ---
-def filter_trial_outliers(group):
-    col = "throughput"
-    Q1 = group[col].quantile(0.25)
-    Q3 = group[col].quantile(0.75)
-    IQR = Q3 - Q1
-    group = group[
-        (group[col] >= Q1 - 1.5 * IQR) &
-        (group[col] <= Q3 + 1.5 * IQR)
-    ]
-    return group
+# --- Trial-level outlier filtering (MAD-based, per participant per task type) ---
+# Using Median Absolute Deviation (Leys et al., 2013) instead of z-score since it
+# makes no normality assumption and is robust against the outliers being detected.
+trials_before = trials.copy()
+mask = pd.Series(True, index=trials.index)
 
-trials_before = len(trials)
-print(trials_before)
-trials = trials.groupby("task_type", group_keys=False).apply(filter_trial_outliers)
-print(f"\nTrial outlier filtering: removed {trials_before - len(trials)} trials ({(trials_before - len(trials)) / trials_before * 100:.1f}%)")
+for (pid, task), group in trials.groupby(["participant_id", "task_type"]):
+    median = group["throughput"].median()
+    mad = np.median(np.abs(group["throughput"] - median))
+    
+    if mad == 0:
+        continue
+    
+    modified_z = 0.6745 * (group["throughput"] - median) / mad
+    mask[group.index[np.abs(modified_z) > 3.5]] = False
+    
+trials = trials[mask]
+removed = trials_before[~trials_before.index.isin(trials.index)]
 
+print(f"\nTrial outlier filtering: removed {len(trials_before) - len(trials)} trials ({(len(trials_before) - len(trials)) / len(trials_before) * 100:.1f}%)")
+print(removed.groupby("slot").size())
 
 trials.to_csv(f"{PREFIX}/results.csv", index=False)
 
