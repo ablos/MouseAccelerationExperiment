@@ -26,7 +26,6 @@ dfs[SESSIONS] = dfs[SESSIONS][dfs[SESSIONS]["id"].isin(complete_sids) & dfs[SESS
 # Filter: >= 1 session, no monitor group
 session_counts = dfs[SESSIONS].groupby("participant_id").size()
 all_pids = set(session_counts[session_counts >= 1].index)
-all_pids -= set(dfs[PARTICIPANTS].loc[dfs[PARTICIPANTS]["group"] == "monitor", "id"])
 
 dfs[SESSIONS] = dfs[SESSIONS][dfs[SESSIONS]["participant_id"].isin(all_pids)]
 valid_sids = set(dfs[SESSIONS]["id"])
