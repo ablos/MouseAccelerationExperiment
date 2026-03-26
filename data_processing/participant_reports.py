@@ -189,3 +189,40 @@ for pid in sorted(trials["participant_id"].unique()):
     print(f"Saved report for participant {pid}")
 
 print(f"\nDone. Reports saved to {OUTPUT_DIR}")
+
+leaderboard_metrics = [
+    ("throughput", "Throughput (bits/s)", True),
+    ("plr", "Path Length Ratio", False),
+    ("submovement_count", "Submovement Count", False),
+    ("hit_rate", "Hit Rate", True),
+]
+pid_code = dfs[PARTICIPANTS].set_index("id")["code"]
+
+# --- Leaderboard: raw metric averages ---
+for metric, label, higher_is_better in leaderboard_metrics:
+    overall = agg.groupby("participant_id")[metric].mean().reset_index()
+    overall["code"] = overall["participant_id"].map(pid_code)
+    overall = overall.sort_values(metric, ascending=not higher_is_better).reset_index(drop=True)
+
+    print(f"\n=== LEADERBOARD: {label} ({'higher' if higher_is_better else 'lower'} = better) ===")
+    print(f"{'Rank':<6} {'ID':<6} {'Code':<12} {label}")
+    for i, row in overall.iterrows():
+        print(f"{i+1:<6} {int(row['participant_id']):<6} {row['code']:<12} {row[metric]:.3f}")
+
+# --- Leaderboard: throughput improvement from baseline ---
+slot1 = agg[agg["slot"] == 1].groupby("participant_id")["throughput"].mean()
+last_slot = agg.groupby(["participant_id", "slot"])["throughput"].mean().reset_index()
+last_slot = last_slot.loc[last_slot.groupby("participant_id")["slot"].idxmax()].set_index("participant_id")["throughput"]
+
+improvement = pd.concat([slot1.rename("slot1"), last_slot.rename("last")], axis=1).dropna()
+improvement["delta"] = improvement["last"] - improvement["slot1"]
+improvement["pct_change"] = (improvement["delta"] / improvement["slot1"]) * 100
+improvement = improvement.reset_index()
+improvement["code"] = improvement["participant_id"].map(pid_code)
+improvement = improvement.sort_values("pct_change", ascending=False).reset_index(drop=True)
+
+print("\n=== LEADERBOARD: Throughput Improvement (baseline → last session) ===")
+print(f"{'Rank':<6} {'ID':<6} {'Code':<12} {'Baseline':>10} {'Last':>10} {'% Change':>10}")
+for i, row in improvement.iterrows():
+    arrow = "▲" if row["delta"] >= 0 else "▼"
+    print(f"{i+1:<6} {int(row['participant_id']):<6} {row['code']:<12} {row['slot1']:>10.3f} {row['last']:>10.3f} {arrow}{abs(row['pct_change']):>8.1f}%")
