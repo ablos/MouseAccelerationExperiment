@@ -65,15 +65,16 @@ def add_shared_legend(fig, axes):
 # =====================================
 
 metrics = [
-    ("throughput_normalized", "Throughput (higher = better)"),
-    ("plr_normalized", "Path Length Ratio (lower = better)"),
-    ("submovement_count_normalized", "Submovement Count (lower = better)"),
-    ("hit_rate_normalized", "Hit Rate (higher = better)"),
+    ("throughput_normalized", "Throughput (relative to baseline)", "higher = better"),
+    ("plr_normalized", "Path Length Ratio (relative to baseline)", "lower = better"),
+    ("submovement_count_normalized", "Submovement Count (relative to baseline)", "lower = better"),
+    ("hit_rate_normalized", "Hit Rate (relative to baseline)", "higher = better"),
 ]
 
-for metric, label in metrics:
+for metric, title, subtitle in metrics:
     fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharey=False)
-    fig.suptitle(label)
+    fig.suptitle(title, fontsize=13, y=1.02)
+    fig.text(0.5, 0.95, subtitle, ha="center", fontsize=10, color="gray")
 
     for ax, task in zip(axes, ["Clicking", "Dragging", "Slider"]):
         task_data = agg[agg["task_type"] == task]
@@ -88,7 +89,7 @@ for metric, label in metrics:
 
         ax.set_title(task)
         ax.set_xlabel("Slot")
-        ax.set_ylabel(label if ax == axes[0] else "")
+        ax.set_ylabel(title if ax == axes[0] else "")
 
     remove_inner_legends(axes)
     add_shared_legend(fig, axes)
@@ -142,33 +143,39 @@ for metric, label in raw_metrics:
 # MODEL RESULTS AND EFFECT SIZES
 # =====================================
 
-interaction = model_results[model_results["term"] == "group[T.experimental]:slot_scaled"].copy()
-interaction["label"] = interaction.apply(lambda r: f"β={r['coef']:.3f}\np={r['p']:.3f}", axis=1)
-
 METRIC_LABELS = {"Plr": "Path Length Ratio", "Submovement_count": "Submovement Count", "Hit": "Hit Rate"}
 
-pval_pivot = interaction.pivot(index="metric", columns="task", values="p").rename(index=METRIC_LABELS)
-label_pivot = interaction.pivot(index="metric", columns="task", values="label").rename(index=METRIC_LABELS)
+def make_term_pivots(term):
+    df = model_results[model_results["term"] == term].copy()
+    df["label"] = df.apply(lambda r: f"β={r['coef']:.3f}\np={r['p']:.3f}" + (" *" if r['p'] < 0.004 else ""), axis=1)
+    p = df.pivot(index="metric", columns="task", values="p").rename(index=METRIC_LABELS)
+    l = df.pivot(index="metric", columns="task", values="label").rename(index=METRIC_LABELS)
+    return p, l
 
-fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+interaction_p, interaction_l = make_term_pivots("group[T.experimental]:slot_scaled")
+group_p, group_l = make_term_pivots("group[T.experimental]")
 
-sns.heatmap(pval_pivot, annot=label_pivot, fmt="", cmap="RdYlGn_r", vmin=0, vmax=0.1, ax=axes[0], linewidths=0.5)
-axes[0].set_title("Interaction effect (group × slot)\np-value + coefficient")
+fig, axes = plt.subplots(1, 3, figsize=(18, 4))
 
-cbar_pval = axes[0].collections[0].colorbar
-cbar_pval.set_ticks([0, 0.05, 0.1])
-cbar_pval.set_ticklabels(["0", "0.05", "0.1"])
+sns.heatmap(group_p, annot=group_l, fmt="", cmap="RdYlGn_r", vmin=0, vmax=0.1, ax=axes[0], linewidths=0.5)
+axes[0].set_title("Main effect of group\np-value + coefficient")
+cbar = axes[0].collections[0].colorbar
+cbar.set_ticks([0, 0.004, 0.05, 0.1])
+cbar.set_ticklabels(["0", "0.004*", "0.05", "0.1"])
+
+sns.heatmap(interaction_p, annot=interaction_l, fmt="", cmap="RdYlGn_r", vmin=0, vmax=0.1, ax=axes[1], linewidths=0.5)
+axes[1].set_title("Interaction effect (group x slot)\np-value + coefficient")
+cbar = axes[1].collections[0].colorbar
+cbar.set_ticks([0, 0.004, 0.05, 0.1])
+cbar.set_ticklabels(["0", "0.004*", "0.05", "0.1"])
 
 f2_pivot = effect_sizes.pivot(index="metric", columns="task", values="cohens_f2").rename(index=METRIC_LABELS)
-sns.heatmap(f2_pivot, annot=True, fmt=".3f", cmap="Blues", ax=axes[1], linewidths=0.5)
-axes[1].set_title("Effect size (Cohen's f²)")
-
-cbar_f2 = axes[1].collections[0].colorbar
-cbar_f2.set_ticks([0, 0.02, 0.15, 0.35])
-cbar_f2.set_ticklabels(["0", "0.02 small", "0.15 medium", "0.35 large"])
+sns.heatmap(f2_pivot, annot=True, fmt=".3f", cmap="Blues", ax=axes[2], linewidths=0.5)
+axes[2].set_title("Interaction effect size\n(incremental Cohen's f²)")
+axes[2].collections[0].colorbar.set_label("f²", fontsize=9)
 
 plt.tight_layout()
-fig.text(0.5, -0.02, "Note: All values are rounded to 3 decimal places. Very small p-values therefore display as 0.000", ha="center", fontsize=8, style="italic")
+fig.text(0.5, -0.05, "Note: All values are rounded to 3 decimal places. Very small p-values therefore display as 0.000.\n* p < .004 (Bonferroni correction across 12 tests)", ha="center", fontsize=8, style="italic")
 plt.savefig(f"{PREFIX}plots/summary_heatmap.png", dpi=150, bbox_inches="tight")
 
 if SHOW_FIGS:

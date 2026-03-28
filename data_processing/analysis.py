@@ -14,14 +14,18 @@ trials["hit"] = trials["hit"].astype(int)
 results = []
 effect_sizes = []
 
-# Helper function of Cohens' f^2
-def cohens_f2(fit):
+# Helper function for R² of a mixed effects model
+def r2(fit):
     var_fixed = fit.fittedvalues.var()
     var_random = fit.cov_re.values[0][0] if fit.cov_re is not None else 0
     var_resid = fit.scale
-    
-    r2 = var_fixed / (var_fixed + var_random + var_resid)
-    return r2 / (1 - r2)
+    return var_fixed / (var_fixed + var_random + var_resid)
+
+# Incremental Cohen's f² for the interaction term:
+# how much variance does group×slot explain above the reduced model?
+def incremental_cohens_f2(r2_full, r2_reduced):
+    delta = max(r2_full - r2_reduced, 0)  # clamp: negative means ~0 effect (convergence noise)
+    return delta / (1 - r2_full)
 
 # Run the mixed-effects model for each metric per task type
 for metric, formula in [
@@ -32,9 +36,14 @@ for metric, formula in [
 ]:
     for task in ["clicking", "dragging", "slider"]:
         data = trials[trials["task_type"] == task].dropna(subset=[metric, "slot_scaled", "hours_scaled"]).reset_index(drop=True)
-        model = smf.mixedlm(formula, data=data, groups=data["participant_id"])
-        fit = model.fit(disp=False)
-        
+
+        full_model = smf.mixedlm(formula, data=data, groups=data["participant_id"])
+        fit = full_model.fit(disp=False)
+
+        reduced_formula = formula.replace(f"{metric} ~ group * slot_scaled", f"{metric} ~ group + slot_scaled")
+        reduced_model = smf.mixedlm(reduced_formula, data=data, groups=data["participant_id"])
+        fit_reduced = reduced_model.fit(disp=False)
+
         for term in fit.params.index:
             results.append({
                 "metric": metric,
@@ -47,11 +56,11 @@ for metric, formula in [
                 "ci_low": fit.conf_int().loc[term, 0],
                 "ci_high": fit.conf_int().loc[term, 1],
             })
-            
+
         effect_sizes.append({
             "metric": metric,
             "task": task,
-            "cohens_f2": cohens_f2(fit),
+            "cohens_f2": incremental_cohens_f2(r2(fit), r2(fit_reduced)),
         })
             
 results_df = pd.DataFrame(results)
