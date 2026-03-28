@@ -17,6 +17,11 @@ TRIALS = "trials"
 
 dfs = { name: pd.read_csv(f"{PREFIX}{name}.csv") for name in [MOUSE_COORDINATES, PARTICIPANTS, SESSIONS, TASKS, TRIALS] }
 
+for col, tables in [("group", [PARTICIPANTS]), ("task_type", [TASKS, TRIALS])]:
+    for t in tables:
+        if col in dfs[t].columns:
+            dfs[t][col] = dfs[t][col].str.capitalize()
+
 # Apply same data quality fixes as data_processing.py
 dfs[TASKS] = dfs[TASKS].sort_values("id").drop_duplicates(subset=["session_id", "task_type"], keep="first")
 complete_sessions = dfs[TASKS].groupby("session_id")["task_type"].nunique()
@@ -124,6 +129,8 @@ agg = trials.groupby(["participant_id", "slot", "task_type", "group"]).agg(
 
 # Load valid participant agg for group means (from main analysis)
 valid_trials = pd.read_csv(f"{PREFIX}results.csv")
+valid_trials["group"] = valid_trials["group"].str.capitalize()
+valid_trials["task_type"] = valid_trials["task_type"].str.capitalize()
 valid_agg = valid_trials.groupby(["participant_id", "slot", "task_type", "group"]).agg(
     throughput=("throughput", "mean"),
     plr=("plr", "mean"),
@@ -143,14 +150,14 @@ pid_to_code = dfs[PARTICIPANTS].set_index("id")["code"].apply(lambda x: str(int(
 for pid in sorted(trials["participant_id"].unique()):
     pdata = agg[agg["participant_id"] == pid]
     group = pdata["group"].iloc[0]
-    other_group = "control" if group == "experimental" else "experimental"
+    other_group = "Control" if group == "Experimental" else "Experimental"
     code = pid_to_code.get(pid, str(pid))
 
-    fig, axes = plt.subplots(len(metrics), 3, figsize=(15, 3 * len(metrics)), sharey="row")
+    fig, axes = plt.subplots(len(metrics), 3, figsize=(15, 3 * len(metrics)), sharey=False)
     fig.suptitle(f"Participant {code} ({group} group) — Performance over sessions", fontsize=14)
 
     for row, (metric, label, direction) in enumerate(metrics):
-        for col, task in enumerate(["clicking", "dragging", "slider"]):
+        for col, task in enumerate(["Clicking", "Dragging", "Slider"]):
             ax = axes[row][col]
             task_data = pdata[pdata["task_type"] == task]
 
@@ -160,13 +167,13 @@ for pid in sorted(trials["participant_id"].unique()):
             other_mean = other_data.groupby("slot")[metric].mean()
 
             ax.plot(other_mean.index, other_mean.values,
-                    color="steelblue" if other_group == "control" else "tomato",
+                    color="steelblue" if other_group == "Control" else "tomato",
                     linewidth=1, linestyle="--", alpha=0.5, label=f"{other_group} mean")
             ax.plot(group_mean.index, group_mean.values,
-                    color="steelblue" if group == "control" else "tomato",
+                    color="steelblue" if group == "Control" else "tomato",
                     linewidth=1, linestyle=":", alpha=0.7, label=f"{group} mean")
             ax.plot(task_data["slot"], task_data[metric],
-                    color="steelblue" if group == "control" else "tomato",
+                    color="steelblue" if group == "Control" else "tomato",
                     marker="o", linewidth=2, label="you")
 
             baseline_rows = task_data[task_data["slot"] == 1]
@@ -176,13 +183,20 @@ for pid in sorted(trials["participant_id"].unique()):
                     ax.axhline(baseline_val, color="gray", linewidth=1,
                                linestyle="--", alpha=0.6, label="your baseline")
 
+            all_vals = pd.concat([task_data[metric], group_mean, other_mean]).dropna()
+            if not all_vals.empty:
+                lo, hi = all_vals.min(), all_vals.max()
+                pad = max((hi - lo) * 0.15, 0.05)
+                ax.set_ylim(max(0, lo - pad), hi + pad)
+
             if row == 0:
                 ax.set_title(task)
             if col == 0:
                 ax.set_ylabel(f"{label}\n({direction})", fontsize=8)
             ax.set_xlabel("Session" if row == len(metrics) - 1 else "")
 
-    axes[0][2].legend(loc="upper right")
+    handles, labels = axes[0][2].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper right", bbox_to_anchor=(1.08, 1.0), frameon=True)
     plt.tight_layout()
     plt.savefig(f"{OUTPUT_DIR}participant_{pid}.png", dpi=150, bbox_inches="tight")
     plt.close()
@@ -206,7 +220,7 @@ for metric, label, higher_is_better in leaderboard_metrics:
 
     print(f"\n=== LEADERBOARD: {label} ({'higher' if higher_is_better else 'lower'} = better) ===")
     print(f"{'Rank':<6} {'ID':<6} {'Code':<12} {label}")
-    for i, row in overall.iterrows():
+    for i, (_, row) in enumerate(overall.iterrows()):
         print(f"{i+1:<6} {int(row['participant_id']):<6} {row['code']:<12} {row[metric]:.3f}")
 
 # --- Leaderboard: throughput improvement from baseline ---
@@ -223,6 +237,6 @@ improvement = improvement.sort_values("pct_change", ascending=False).reset_index
 
 print("\n=== LEADERBOARD: Throughput Improvement (baseline → last session) ===")
 print(f"{'Rank':<6} {'ID':<6} {'Code':<12} {'Baseline':>10} {'Last':>10} {'% Change':>10}")
-for i, row in improvement.iterrows():
+for i, (_, row) in enumerate(improvement.iterrows()):
     arrow = "▲" if row["delta"] >= 0 else "▼"
     print(f"{i+1:<6} {int(row['participant_id']):<6} {row['code']:<12} {row['slot1']:>10.3f} {row['last']:>10.3f} {arrow}{row['pct_change']:>+8.1f}%")
