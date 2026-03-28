@@ -36,6 +36,13 @@ for metric in ["throughput", "plr", "submovement_count", "hit_rate"]:
 
 GROUP_PALETTE = {"Control": "steelblue", "Experimental": "tomato"}
 
+os.makedirs(f"{PREFIX}plots", exist_ok=True)
+os.makedirs(f"{PREFIX}plots_transparent", exist_ok=True)
+
+def savefig(filename):
+    plt.savefig(f"{PREFIX}plots/{filename}", dpi=150, bbox_inches="tight")
+    plt.savefig(f"{PREFIX}plots_transparent/{filename}", dpi=150, bbox_inches="tight", transparent=True)
+
 def set_ci_ylim(ax, task_data, metric, floor=None):
     ci_bounds = []
     for group in task_data["group"].unique():
@@ -96,7 +103,7 @@ for metric, title, subtitle in metrics:
 
     plt.tight_layout()
     os.makedirs(f"{PREFIX}plots", exist_ok=True)
-    plt.savefig(f"{PREFIX}plots/{metric}.png", dpi=150, bbox_inches="tight")
+    savefig(f"{metric}.png")
 
     if SHOW_FIGS:
         plt.show()
@@ -134,7 +141,7 @@ for metric, label in raw_metrics:
     add_shared_legend(fig, axes)
 
     plt.tight_layout()
-    plt.savefig(f"{PREFIX}plots/raw_{metric}.png", dpi=150, bbox_inches="tight")
+    savefig(f"raw_{metric}.png")
 
     if SHOW_FIGS:
         plt.show()
@@ -176,7 +183,7 @@ axes[2].collections[0].colorbar.set_label("f²", fontsize=9)
 
 plt.tight_layout()
 fig.text(0.5, -0.05, "Note: All values are rounded to 3 decimal places. Very small p-values therefore display as 0.000.\n* p < .004 (Bonferroni correction across 12 tests)", ha="center", fontsize=8, style="italic")
-plt.savefig(f"{PREFIX}plots/summary_heatmap.png", dpi=150, bbox_inches="tight")
+savefig("summary_heatmap.png")
 
 if SHOW_FIGS:
     plt.show()
@@ -196,15 +203,35 @@ desc = trials.groupby(["group", "task_type"]).agg(
     hit_rate_sd=("hit", "std"),
 ).reset_index()
 
+desc_overall = trials.groupby("group").agg(
+    throughput_mean=("throughput", "mean"),
+    throughput_sd=("throughput", "std"),
+    plr_mean=("plr", "mean"),
+    plr_sd=("plr", "std"),
+    submovement_mean=("submovement_count", "mean"),
+    submovement_sd=("submovement_count", "std"),
+    hit_rate_mean=("hit", "mean"),
+    hit_rate_sd=("hit", "std"),
+).reset_index()
+desc_overall["task_type"] = "All tasks"
+
 desc.to_csv(f"{PREFIX}plots/descriptive_stats.csv", index=False)
 
-fig, ax = plt.subplots(figsize=(14, 4))
+fig, ax = plt.subplots(figsize=(14, 5))
 ax.axis("off")
 
 table_data = []
 for _, row in desc.iterrows():
     table_data.append([
         row["group"], row["task_type"],
+        f"{row['throughput_mean']:.3f} ± {row['throughput_sd']:.2f}",
+        f"{row['plr_mean']:.3f} ± {row['plr_sd']:.3f}",
+        f"{row['submovement_mean']:.3f} ± {row['submovement_sd']:.3f}",
+        f"{row['hit_rate_mean']:.3f} ± {row['hit_rate_sd']:.3f}"
+    ])
+for _, row in desc_overall.iterrows():
+    table_data.append([
+        row["group"], "All tasks",
         f"{row['throughput_mean']:.3f} ± {row['throughput_sd']:.2f}",
         f"{row['plr_mean']:.3f} ± {row['plr_sd']:.3f}",
         f"{row['submovement_mean']:.3f} ± {row['submovement_sd']:.3f}",
@@ -229,7 +256,84 @@ for (row, col), cell in table.get_celld().items():
         cell.set_facecolor("#e8e8e8")
 
 plt.tight_layout()
-plt.savefig(f"{PREFIX}plots/descriptive_stats.png", dpi=150, bbox_inches="tight")
+savefig("descriptive_stats.png")
+
+if SHOW_FIGS:
+    plt.show()
+
+# =====================================
+# MEAN % IMPROVEMENT FROM BASELINE
+# =====================================
+
+# Last two sessions per participant per task
+max_slot = agg.groupby(["participant_id", "task_type"])["slot"].max().reset_index()
+max_slot["slot_cutoff"] = max_slot["slot"] - 1
+last_two = agg.merge(max_slot[["participant_id", "task_type", "slot_cutoff"]], on=["participant_id", "task_type"])
+last_two = last_two[last_two["slot"] >= last_two["slot_cutoff"]]
+
+# Mean of last two sessions per participant per task
+final_perf = last_two.groupby(["participant_id", "task_type", "group"])[["throughput", "plr", "submovement_count", "hit_rate"]].mean().reset_index()
+baseline_perf = agg[agg["slot"] == 1][["participant_id", "task_type", "throughput", "plr", "submovement_count", "hit_rate"]].rename(columns={
+    "throughput": "throughput_base", "plr": "plr_base", "submovement_count": "submovement_base", "hit_rate": "hit_rate_base"
+})
+
+merged = final_perf.merge(baseline_perf, on=["participant_id", "task_type"])
+merged["throughput_pct"]  = (merged["throughput"]        - merged["throughput_base"])        / merged["throughput_base"]        * 100
+merged["plr_pct"]         = (merged["plr_base"]          - merged["plr"])                    / merged["plr_base"]                * 100
+merged["submovement_pct"] = (merged["submovement_base"]  - merged["submovement_count"])       / merged["submovement_base"]        * 100
+merged["hit_rate_pct"]    = (merged["hit_rate"]          - merged["hit_rate_base"])           / merged["hit_rate_base"]           * 100
+
+improvement_df = merged[["participant_id", "task_type", "group", "throughput_pct", "plr_pct", "submovement_pct", "hit_rate_pct"]]
+pct_summary = improvement_df.groupby(["group", "task_type"])[["throughput_pct", "plr_pct", "submovement_pct", "hit_rate_pct"]].agg(["mean", "std"]).reset_index()
+pct_summary.columns = ["_".join(c).strip("_") for c in pct_summary.columns]
+
+pct_overall = improvement_df.groupby("group")[["throughput_pct", "plr_pct", "submovement_pct", "hit_rate_pct"]].agg(["mean", "std"]).reset_index()
+pct_overall.columns = ["_".join(c).strip("_") for c in pct_overall.columns]
+pct_overall["task_type"] = "All tasks"
+
+pct_summary.to_csv(f"{PREFIX}plots/improvement_pct.csv", index=False)
+
+fig, ax = plt.subplots(figsize=(16, 5))
+ax.axis("off")
+
+table_data = []
+for _, row in pct_summary.iterrows():
+    table_data.append([
+        row["group"], row["task_type"],
+        f"{row['throughput_pct_mean']:+.1f}% ± {row['throughput_pct_std']:.1f}%",
+        f"{row['plr_pct_mean']:+.1f}% ± {row['plr_pct_std']:.1f}%",
+        f"{row['submovement_pct_mean']:+.1f}% ± {row['submovement_pct_std']:.1f}%",
+        f"{row['hit_rate_pct_mean']:+.1f}% ± {row['hit_rate_pct_std']:.1f}%",
+    ])
+for _, row in pct_overall.iterrows():
+    table_data.append([
+        row["group"], "All tasks",
+        f"{row['throughput_pct_mean']:+.1f}% ± {row['throughput_pct_std']:.1f}%",
+        f"{row['plr_pct_mean']:+.1f}% ± {row['plr_pct_std']:.1f}%",
+        f"{row['submovement_pct_mean']:+.1f}% ± {row['submovement_pct_std']:.1f}%",
+        f"{row['hit_rate_pct_mean']:+.1f}% ± {row['hit_rate_pct_std']:.1f}%",
+    ])
+
+table = ax.table(
+    cellText=table_data,
+    colLabels=["Group", "Task", "Throughput", "Path Length Ratio", "Submovements", "Hit Rate"],
+    loc="center",
+    cellLoc="center",
+)
+table.auto_set_font_size(False)
+table.set_fontsize(9)
+table.scale(1, 1.5)
+
+for (row, col), cell in table.get_celld().items():
+    if row == 0:
+        cell.set_facecolor("#2c3e50")
+        cell.set_text_props(color="white", fontweight="bold")
+    elif row % 2 == 0:
+        cell.set_facecolor("#e8e8e8")
+
+ax.set_title("Mean % improvement from baseline (last 2 sessions vs slot 1)\nPositive = better for all metrics", fontsize=10, pad=12)
+plt.tight_layout()
+savefig("improvement_pct.png")
 
 if SHOW_FIGS:
     plt.show()
@@ -258,7 +362,7 @@ remove_inner_legends(axes)
 add_shared_legend(fig, axes)
 
 plt.tight_layout()
-plt.savefig(f"{PREFIX}plots/baseline_equivalence.png", dpi=150, bbox_inches="tight")
+savefig("baseline_equivalence.png")
 
 if SHOW_FIGS:
     plt.show()
@@ -312,7 +416,7 @@ for (row, col), cell in t1.get_celld().items():
         cell.set_facecolor("#e8e8e8")
 
 plt.tight_layout()
-plt.savefig(f"{PREFIX}plots/demographics_continuous.png", dpi=150, bbox_inches="tight")
+savefig("demographics_continuous.png")
 
 if SHOW_FIGS:
     plt.show()
@@ -335,7 +439,7 @@ remove_inner_legends(axes)
 add_shared_legend(fig, axes)
 
 plt.tight_layout()
-plt.savefig(f"{PREFIX}plots/demographics_categorical.png", dpi=150, bbox_inches="tight")
+savefig("demographics_categorical.png")
 
 if SHOW_FIGS:
     plt.show()
