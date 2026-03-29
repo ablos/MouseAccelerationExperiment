@@ -181,7 +181,7 @@ D = np.where(
     np.abs(trials["start_x"] - trials["target_x"]),
     np.sqrt((trials["start_x"] - trials["target_x"]) ** 2 + (trials["start_y"] - trials["target_y"]) ** 2)
 )
-W = trials["target_size"]
+W = np.where(slider_mask, trials["target_size"], trials["target_size"] * 2)
 trials["id_bits"] = np.log2(2 * D / W)
 trials["throughput"] = trials["id_bits"] / (trials["completion_time_ms"] / 1000)
 
