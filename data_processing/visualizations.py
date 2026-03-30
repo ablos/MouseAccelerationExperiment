@@ -154,7 +154,7 @@ METRIC_LABELS = {"Plr": "Path Length Ratio", "Submovement_count": "Submovement C
 
 def make_term_pivots(term):
     df = model_results[model_results["term"] == term].copy()
-    df["label"] = df.apply(lambda r: f"β={r['coef']:.3f}\np={r['p']:.3f}" + (" *" if r['p'] < 0.004 else ""), axis=1)
+    df["label"] = df.apply(lambda r: f"β={r['coef']:.3f}\n" + ("p<0.001" if r['p'] < 0.001 else f"p={r['p']:.3f}") + (" *" if r['p'] < 0.004 else ""), axis=1)
     p = df.pivot(index="metric", columns="task", values="p").rename(index=METRIC_LABELS)
     l = df.pivot(index="metric", columns="task", values="label").rename(index=METRIC_LABELS)
     return p, l
@@ -177,12 +177,13 @@ cbar.set_ticks([0, 0.004, 0.05, 0.1])
 cbar.set_ticklabels(["0", "0.004*", "0.05", "0.1"])
 
 f2_pivot = effect_sizes.pivot(index="metric", columns="task", values="cohens_f2").rename(index=METRIC_LABELS)
-sns.heatmap(f2_pivot, annot=True, fmt=".3f", cmap="Blues", ax=axes[2], linewidths=0.5)
+f2_labels = f2_pivot.map(lambda v: f"{v:.3f}" if v >= 0.001 else "<0.001")
+sns.heatmap(f2_pivot, annot=f2_labels, fmt="", cmap="Blues", ax=axes[2], linewidths=0.5)
 axes[2].set_title("Interaction effect size\n(incremental Cohen's f²)")
 axes[2].collections[0].colorbar.set_label("f²", fontsize=9)
 
 plt.tight_layout()
-fig.text(0.5, -0.05, "Note: All values are rounded to 3 decimal places. Very small p-values therefore display as 0.000.\n* p < .004 (Bonferroni correction across 12 tests)", ha="center", fontsize=8, style="italic")
+fig.text(0.5, -0.05, "* p < 0.004 (Bonferroni correction across 12 tests)", ha="center", fontsize=8, style="italic")
 savefig("summary_heatmap.png")
 
 if SHOW_FIGS:
@@ -199,7 +200,7 @@ imp_p = improvement_tests.pivot(index="metric", columns="task", values="p").rena
 imp_d = improvement_tests.pivot(index="metric", columns="task", values="cohens_d").rename(index=METRIC_LABELS_IMP)
 
 imp_p_label = improvement_tests.copy()
-imp_p_label["label"] = imp_p_label.apply(lambda r: f"p={r['p']:.3f}" + (" *" if r["p"] < 0.004 else ""), axis=1)
+imp_p_label["label"] = imp_p_label.apply(lambda r: ("p<0.001" if r["p"] < 0.001 else f"p={r['p']:.3f}") + (" *" if r["p"] < 0.004 else ""), axis=1)
 imp_p_label = imp_p_label.pivot(index="metric", columns="task", values="label").rename(index=METRIC_LABELS_IMP)
 
 imp_d_label = improvement_tests.copy()
@@ -219,7 +220,7 @@ axes[1].set_title("Effect size (Cohen's d)\n% improvement: experimental vs contr
 axes[1].collections[0].colorbar.set_label("d", fontsize=9)
 
 plt.tight_layout()
-fig.text(0.5, -0.05, "Note: * p < .004 (Bonferroni correction across 12 tests). Positive d = experimental improved more.", ha="center", fontsize=8, style="italic")
+fig.text(0.5, -0.05, "Note: * p < 0.004 (Bonferroni correction across 12 tests). Positive d = experimental improved more.", ha="center", fontsize=8, style="italic")
 savefig("improvement_heatmap.png")
 
 if SHOW_FIGS:
