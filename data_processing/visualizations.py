@@ -162,30 +162,38 @@ def make_term_pivots(term):
 interaction_p, interaction_l = make_term_pivots("group[T.experimental]:slot_scaled")
 group_p, group_l = make_term_pivots("group[T.experimental]")
 
-fig, axes = plt.subplots(1, 3, figsize=(18, 4))
-
-sns.heatmap(group_p, annot=group_l, fmt="", cmap="RdYlGn_r", vmin=0, vmax=0.1, ax=axes[0], linewidths=0.5)
-axes[0].set_title("Main effect of group\np-value + coefficient")
-cbar = axes[0].collections[0].colorbar
+fig, ax = plt.subplots(figsize=(7, 4))
+sns.heatmap(group_p, annot=group_l, fmt="", cmap="RdYlGn_r", vmin=0, vmax=0.1, ax=ax, linewidths=0.5)
+ax.set_title("Main effect of group\np-value + coefficient")
+cbar = ax.collections[0].colorbar
 cbar.set_ticks([0, 0.004, 0.05, 0.1])
 cbar.set_ticklabels(["0", "0.004*", "0.05", "0.1"])
+plt.tight_layout()
+fig.text(0.5, -0.03, "* p < 0.004 (Bonferroni correction across 12 tests)", ha="center", fontsize=8, style="italic")
+savefig("summary_heatmap_group.png")
+if SHOW_FIGS:
+    plt.show()
 
-sns.heatmap(interaction_p, annot=interaction_l, fmt="", cmap="RdYlGn_r", vmin=0, vmax=0.1, ax=axes[1], linewidths=0.5)
-axes[1].set_title("Interaction effect (group x slot)\np-value + coefficient")
-cbar = axes[1].collections[0].colorbar
+fig, ax = plt.subplots(figsize=(7, 4))
+sns.heatmap(interaction_p, annot=interaction_l, fmt="", cmap="RdYlGn_r", vmin=0, vmax=0.1, ax=ax, linewidths=0.5)
+ax.set_title("Interaction effect (group × slot)\np-value + coefficient")
+cbar = ax.collections[0].colorbar
 cbar.set_ticks([0, 0.004, 0.05, 0.1])
 cbar.set_ticklabels(["0", "0.004*", "0.05", "0.1"])
+plt.tight_layout()
+fig.text(0.5, -0.03, "* p < 0.004 (Bonferroni correction across 12 tests)", ha="center", fontsize=8, style="italic")
+savefig("summary_heatmap_interaction.png")
+if SHOW_FIGS:
+    plt.show()
 
 f2_pivot = effect_sizes.pivot(index="metric", columns="task", values="cohens_f2").rename(index=METRIC_LABELS)
 f2_labels = f2_pivot.map(lambda v: f"{v:.3f}" if v >= 0.001 else "<0.001")
-sns.heatmap(f2_pivot, annot=f2_labels, fmt="", cmap="Blues", ax=axes[2], linewidths=0.5)
-axes[2].set_title("Interaction effect size\n(incremental Cohen's f²)")
-axes[2].collections[0].colorbar.set_label("f²", fontsize=9)
-
+fig, ax = plt.subplots(figsize=(7, 4))
+sns.heatmap(f2_pivot, annot=f2_labels, fmt="", cmap="Blues", ax=ax, linewidths=0.5)
+ax.set_title("Interaction effect size\n(incremental Cohen's f²)")
+ax.collections[0].colorbar.set_label("f²", fontsize=9)
 plt.tight_layout()
-fig.text(0.5, -0.05, "* p < 0.004 (Bonferroni correction across 12 tests)", ha="center", fontsize=8, style="italic")
-savefig("summary_heatmap.png")
-
+savefig("summary_heatmap_f2.png")
 if SHOW_FIGS:
     plt.show()
 
@@ -405,28 +413,27 @@ if SHOW_FIGS:
 
 baseline_data = agg[agg["slot"] == 1]
 
-fig, axes = plt.subplots(1, 4, figsize=(18, 4))
-fig.suptitle("Baseline equivalence (slot 1)")
+for filename, metric_pairs in [
+    ("baseline_equivalence_1.png", [("throughput", "Throughput (bits/s)"), ("plr", "Path Length Ratio")]),
+    ("baseline_equivalence_2.png", [("submovement_count", "Submovement Count"), ("hit_rate", "Hit Rate")]),
+]:
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+    fig.suptitle("Baseline equivalence (slot 1)")
 
-for ax, (metric, label) in zip(axes, [
-    ("throughput", "Throughput (bits/s)"),
-    ("plr", "Path Length Ratio"),
-    ("submovement_count", "Submovement Count"),
-    ("hit_rate", "Hit Rate"),
-]):
-    sns.boxplot(data=baseline_data, x="task_type", y=metric, hue="group", palette=GROUP_PALETTE, ax=ax)
-    ax.set_title(label)
-    ax.set_xlabel("")
-    ax.set_ylabel("")
+    for ax, (metric, label) in zip(axes, metric_pairs):
+        sns.boxplot(data=baseline_data, x="task_type", y=metric, hue="group", palette=GROUP_PALETTE, ax=ax)
+        ax.set_title(label)
+        ax.set_xlabel("")
+        ax.set_ylabel("")
 
-remove_inner_legends(axes)
-add_shared_legend(fig, axes)
+    remove_inner_legends(axes)
+    add_shared_legend(fig, axes)
 
-plt.tight_layout()
-savefig("baseline_equivalence.png")
+    plt.tight_layout()
+    savefig(filename)
 
-if SHOW_FIGS:
-    plt.show()
+    if SHOW_FIGS:
+        plt.show()
 
 # =====================================
 # DEMOGRAPHICS TABLE
