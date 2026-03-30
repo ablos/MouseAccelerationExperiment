@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+from scipy.stats import mannwhitneyu
 import statsmodels.formula.api as smf
 
 PREFIX = "data/"
@@ -74,3 +76,53 @@ print(effect_df)
 
 results_df.to_csv(f"{PREFIX}model_results.csv", index=False)
 effect_df.to_csv(f"{PREFIX}effect_sizes.csv", index=False)
+
+# =============================================
+# MANN-WHITNEY U ON IMPROVEMENT PERCENTAGES
+# =============================================
+
+# Compute per-participant improvement % (last 2 sessions vs slot 1)
+agg = trials.groupby(["participant_id", "slot", "task_type", "group"]).agg(
+    throughput=("throughput", "mean"),
+    plr=("plr", "mean"),
+    submovement_count=("submovement_count", "mean"),
+    hit_rate=("hit", "mean"),
+).reset_index()
+
+max_slot = agg.groupby(["participant_id", "task_type"])["slot"].max().reset_index()
+max_slot["slot_cutoff"] = max_slot["slot"] - 1
+last_two = agg.merge(max_slot[["participant_id", "task_type", "slot_cutoff"]], on=["participant_id", "task_type"])
+last_two = last_two[last_two["slot"] >= last_two["slot_cutoff"]]
+final_perf = last_two.groupby(["participant_id", "task_type", "group"])[["throughput", "plr", "submovement_count", "hit_rate"]].mean().reset_index()
+baseline_perf = agg[agg["slot"] == 1][["participant_id", "task_type", "throughput", "plr", "submovement_count", "hit_rate"]].rename(
+    columns={"throughput": "throughput_base", "plr": "plr_base", "submovement_count": "submovement_base", "hit_rate": "hit_rate_base"}
+)
+merged = final_perf.merge(baseline_perf, on=["participant_id", "task_type"])
+merged["throughput_pct"]  = (merged["throughput"]       - merged["throughput_base"])  / merged["throughput_base"]  * 100
+merged["plr_pct"]         = (merged["plr_base"]         - merged["plr"])              / merged["plr_base"]         * 100
+merged["submovement_pct"] = (merged["submovement_base"] - merged["submovement_count"]) / merged["submovement_base"] * 100
+merged["hit_rate_pct"]    = (merged["hit_rate"]         - merged["hit_rate_base"])    / merged["hit_rate_base"]    * 100
+
+def cohens_d(a, b):
+    n1, n2 = len(a), len(b)
+    pooled_std = np.sqrt(((n1 - 1) * a.std(ddof=1)**2 + (n2 - 1) * b.std(ddof=1)**2) / (n1 + n2 - 2))
+    return (a.mean() - b.mean()) / pooled_std if pooled_std > 0 else 0
+
+improvement_tests = []
+groups = merged.groupby(["task_type", "group"])
+for metric, col in [("throughput", "throughput_pct"), ("plr", "plr_pct"), ("submovement_count", "submovement_pct"), ("hit", "hit_rate_pct")]:
+    for task in ["clicking", "dragging", "slider"]:
+        exp  = groups.get_group((task, "experimental"))[col].dropna()
+        ctrl = groups.get_group((task, "control"))[col].dropna()
+        stat, p = mannwhitneyu(exp, ctrl, alternative="two-sided")
+        improvement_tests.append({
+            "metric": metric,
+            "task": task,
+            "p": p,
+            "cohens_d": cohens_d(exp, ctrl),
+        })
+
+improvement_tests_df = pd.DataFrame(improvement_tests)
+print("\nMann-Whitney U on improvement percentages (Bonferroni α ≈ .004):")
+print(improvement_tests_df.to_string(index=False))
+improvement_tests_df.to_csv(f"{PREFIX}improvement_tests.csv", index=False)

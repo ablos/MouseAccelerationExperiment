@@ -189,6 +189,43 @@ if SHOW_FIGS:
     plt.show()
 
 # =====================================
+# IMPROVEMENT HEATMAP (Mann-Whitney + Cohen's d)
+# =====================================
+
+improvement_tests = pd.read_csv(f"{PREFIX}improvement_tests.csv")
+METRIC_LABELS_IMP = {"throughput": "Throughput", "plr": "Path Length Ratio", "submovement_count": "Submovement Count", "hit": "Hit Rate"}
+
+imp_p = improvement_tests.pivot(index="metric", columns="task", values="p").rename(index=METRIC_LABELS_IMP)
+imp_d = improvement_tests.pivot(index="metric", columns="task", values="cohens_d").rename(index=METRIC_LABELS_IMP)
+
+imp_p_label = improvement_tests.copy()
+imp_p_label["label"] = imp_p_label.apply(lambda r: f"p={r['p']:.3f}" + (" *" if r["p"] < 0.004 else ""), axis=1)
+imp_p_label = imp_p_label.pivot(index="metric", columns="task", values="label").rename(index=METRIC_LABELS_IMP)
+
+imp_d_label = improvement_tests.copy()
+imp_d_label["label"] = imp_d_label["cohens_d"].apply(lambda d: f"d={d:.2f}")
+imp_d_label = imp_d_label.pivot(index="metric", columns="task", values="label").rename(index=METRIC_LABELS_IMP)
+
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+
+sns.heatmap(imp_p, annot=imp_p_label, fmt="", cmap="RdYlGn_r", vmin=0, vmax=0.1, ax=axes[0], linewidths=0.5)
+axes[0].set_title("Mann-Whitney U: group difference in % improvement\np-value")
+cbar = axes[0].collections[0].colorbar
+cbar.set_ticks([0, 0.004, 0.05, 0.1])
+cbar.set_ticklabels(["0", "0.004*", "0.05", "0.1"])
+
+sns.heatmap(imp_d, annot=imp_d_label, fmt="", cmap="RdYlGn", vmin=-1, vmax=2, ax=axes[1], linewidths=0.5)
+axes[1].set_title("Effect size (Cohen's d)\n% improvement: experimental vs control")
+axes[1].collections[0].colorbar.set_label("d", fontsize=9)
+
+plt.tight_layout()
+fig.text(0.5, -0.05, "Note: * p < .004 (Bonferroni correction across 12 tests). Positive d = experimental improved more.", ha="center", fontsize=8, style="italic")
+savefig("improvement_heatmap.png")
+
+if SHOW_FIGS:
+    plt.show()
+
+# =====================================
 # DESCRIPTIVE STATISTICS
 # =====================================
 
@@ -292,6 +329,29 @@ pct_overall.columns = ["_".join(c).strip("_") for c in pct_overall.columns]
 pct_overall["task_type"] = "All tasks"
 
 pct_summary.to_csv(f"{PREFIX}plots/improvement_pct.csv", index=False)
+
+# Cohen's d on improvement percentages
+def cohens_d(a, b):
+    n1, n2 = len(a), len(b)
+    pooled_std = np.sqrt(((n1 - 1) * a.std(ddof=1)**2 + (n2 - 1) * b.std(ddof=1)**2) / (n1 + n2 - 2))
+    return (a.mean() - b.mean()) / pooled_std if pooled_std > 0 else 0
+
+cohens_d_rows = []
+_groups = improvement_df.groupby(["task_type", "group"])
+_groups_overall = improvement_df.groupby("group")
+for metric in ["throughput_pct", "plr_pct", "submovement_pct", "hit_rate_pct"]:
+    for task in ["Clicking", "Dragging", "Slider"]:
+        exp = _groups.get_group((task, "Experimental"))[metric].dropna() if (task, "Experimental") in _groups.groups else pd.Series(dtype=float)
+        ctrl = _groups.get_group((task, "Control"))[metric].dropna() if (task, "Control") in _groups.groups else pd.Series(dtype=float)
+        cohens_d_rows.append({"metric": metric, "task": task.lower(), "cohens_d": cohens_d(exp, ctrl)})
+    exp = _groups_overall.get_group("Experimental")[metric].dropna() if "Experimental" in _groups_overall.groups else pd.Series(dtype=float)
+    ctrl = _groups_overall.get_group("Control")[metric].dropna() if "Control" in _groups_overall.groups else pd.Series(dtype=float)
+    cohens_d_rows.append({"metric": metric, "task": "all", "cohens_d": cohens_d(exp, ctrl)})
+
+cohens_d_df = pd.DataFrame(cohens_d_rows)
+print("\nCohen's d on improvement percentages:")
+print(cohens_d_df.to_string(index=False))
+cohens_d_df.to_csv(f"{PREFIX}plots/cohens_d_improvement.csv", index=False)
 
 fig, ax = plt.subplots(figsize=(16, 5))
 ax.axis("off")
